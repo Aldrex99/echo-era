@@ -1,5 +1,6 @@
 import User from "../models/User.model";
 import { IPersonalUserUpdate, IUserMongo } from "../types/user.type";
+import { ISearchFields } from "../types/global.type";
 import { emailExists, usernameExists } from "./auth.service";
 import FriendRequest from "../models/FriendRequest.model";
 
@@ -116,4 +117,23 @@ export const deleteUser = async (id: string) => {
   }
 
   return user;
+}
+
+export const getUsersByMultipleFields = async (fields: ISearchFields[], query: string, pages: number, limit: number) => {
+  const orFields = fields.map((field) => {
+    if (typeof field.field === 'string') {
+      if (field.field === '_id') {
+        return {[field.field]: {$regex: query}};
+      } else {
+        return {[field.field]: {$regex: query, $options: 'i'}};
+      }
+    } else {
+      return {[field.field.field]: {$elemMatch: {[field.field.elemMatch]: {$regex: query}}}};
+    }
+  });
+
+  return {
+    result: await User.find({$or: orFields}).skip(pages * limit).limit(limit),
+    totalCount: await User.find({$or: orFields}).countDocuments(),
+  };
 }

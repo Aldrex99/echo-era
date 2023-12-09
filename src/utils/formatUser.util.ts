@@ -1,4 +1,4 @@
-import { IPersonalUser, IUserMongo } from "../types/user.type";
+import { IPersonalUser, IUserForUser, IUserMongo } from "../types/user.type";
 
 export const personalUser = (user: IUserMongo): IPersonalUser => {
   return {
@@ -13,5 +13,14 @@ export const personalUser = (user: IUserMongo): IPersonalUser => {
     createdAt: user.createdAt,
     updatedAt: user.updatedAt,
     lastLogout: user.lastLogout,
+  };
+}
+
+export const userForUser = (user: IUserMongo): IUserForUser => {
+  return {
+    id: user._id.toString(),
+    username: user.username,
+    profile: user.profile,
+    role: user.role,
   };
 }
