@@ -38,6 +38,8 @@ const userSchema = new Schema({
     date: {type: Date, default: Date.now},
     type: {type: String, required: true},
   }],
+  isVerified: {type: Boolean, default: false},
+  verificationCode: String,
   isPasswordReset: {type: Boolean, default: false},
   passwordResetCode: String,
   passwordResetCodeExpiresAt: Date,
