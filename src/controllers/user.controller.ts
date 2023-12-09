@@ -2,6 +2,8 @@ import { NextFunction, Response } from "express";
 import { IRequestUser } from "../types/user.type";
 import * as userService from "../services/user.service";
 import * as formatUser from "../utils/formatUser.util";
+import { validationResult } from "express-validator";
+import { validationErrorsUtil } from "../utils/validationErrors.util";
 
 // Get profile of the user
 export const getProfile = async (req: IRequestUser, res: Response, next: NextFunction) => {
@@ -25,6 +27,9 @@ export const getProfile = async (req: IRequestUser, res: Response, next: NextFun
 
 // Update user
 export const updateUser = async (req: IRequestUser, res: Response, next: NextFunction) => {
+  const errors = validationResult(req);
+  await validationErrorsUtil(errors, res);
+
   try {
     // Get user
     const user = await userService.getUserById(req.user.id);

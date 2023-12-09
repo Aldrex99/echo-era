@@ -107,3 +107,10 @@ export interface IPersonalUserUpdate {
   email?: string;
   profile?: IProfile;
 }
+
+export interface IUserForUser {
+  id: string;
+  username?: string;
+  profile?: IProfile;
+  role: 'user' | 'moderator' | 'admin';
+}

@@ -6,17 +6,12 @@ import { IPersonalUser, IRequestUser, IUserCreation } from "../types/user.type";
 import * as mail from "../utils/mailer.util";
 import * as token from "../utils/tokens.util";
 import uuidGenerate from "../utils/uuid.util";
+import { validationErrorsUtil } from "../utils/validationErrors.util";
 
 // Register a new user
 export const register = async (req: Request, res: Response, next: NextFunction) => {
   const errors = validationResult(req);
-  if (!errors.isEmpty()) {
-    return res.status(422).json({
-      code: 422,
-      message: "Les données envoyées sont incorrectes",
-      errors: errors.array(),
-    });
-  }
+  await validationErrorsUtil(errors, res);
 
   const {username, email, password} = req.body;
 
@@ -91,13 +86,8 @@ export const verifyEmail = async (req: Request, res: Response, next: NextFunctio
 // Login a user
 export const login = async (req: Request, res: Response, next: NextFunction) => {
   const errors = validationResult(req);
-  if (!errors.isEmpty()) {
-    return res.status(422).json({
-      code: 422,
-      message: "Les données envoyées sont incorrectes",
-      errors: errors.array(),
-    });
-  }
+  await validationErrorsUtil(errors, res);
+  
   // Get email and password
   const {email, password} = req.body;
 
@@ -140,13 +130,7 @@ export const logout = async (req: IRequestUser, res: Response, next: NextFunctio
 // Forgot password
 export const forgotPassword = async (req: Request, res: Response, next: NextFunction) => {
   const errors = validationResult(req);
-  if (!errors.isEmpty()) {
-    return res.status(422).json({
-      code: 422,
-      message: "Les données envoyées sont incorrectes",
-      errors: errors.array(),
-    });
-  }
+  await validationErrorsUtil(errors, res);
 
   const {email} = req.body;
 
@@ -182,13 +166,7 @@ export const forgotPassword = async (req: Request, res: Response, next: NextFunc
 // Reset password
 export const resetPassword = async (req: Request, res: Response, next: NextFunction) => {
   const errors = validationResult(req);
-  if (!errors.isEmpty()) {
-    return res.status(422).json({
-      code: 422,
-      message: "Les données envoyées sont incorrectes",
-      errors: errors.array(),
-    });
-  }
+  await validationErrorsUtil(errors, res);
 
   const {passwordResetCode, password} = req.body;
 
