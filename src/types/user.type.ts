@@ -25,7 +25,7 @@ interface IProfile {
 }
 
 interface IPreviousName {
-  name: string;
+  username: string;
   date?: Date;
 }
 
@@ -64,7 +64,7 @@ export interface IUserMongo {
   role?: 'user' | 'moderator' | 'admin';
   previousNames?: IPreviousName[];
   previousEmails?: IPreviousEmail[];
-  nameOnDelete?: string;
+  usernameOnDelete?: string;
   emailOnDelete?: string;
   isActive?: boolean;
   warnings?: IWarning[];
@@ -100,4 +100,10 @@ export interface IPersonalUser {
   createdAt: Date;
   updatedAt: Date;
   lastLogout: Date;
+}
+
+export interface IPersonalUserUpdate {
+  username?: string;
+  email?: string;
+  profile?: IProfile;
 }

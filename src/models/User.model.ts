@@ -12,14 +12,14 @@ const userSchema = new Schema({
   },
   role: {type: String, default: 'user', enum: ['user', 'moderator', 'admin']},
   previousNames: [{
-    name: {type: String, required: true},
+    username: {type: String, required: true},
     date: {type: Date, default: Date.now},
   }],
   previousEmails: [{
     email: {type: String, required: true},
     date: {type: Date, default: Date.now},
   }],
-  nameOnDelete: String,
+  usernameOnDelete: String,
   emailOnDelete: String,
   isActive: {type: Boolean, default: false},
   warnings: [{
