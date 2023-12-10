@@ -3,7 +3,17 @@ import { IRequestUser } from "../types/user.type";
 import { validationResult } from "express-validator";
 import { validationErrorsUtil } from "../utils/validationErrors.util";
 import * as chatService from "../services/chat.service";
-import { IChatCreation } from "../types/chat.type";
+import { IChatCreation, IGetChat } from "../types/chat.type";
+
+const participantRoleVerify = async (acceptedRole: string[], chat: IGetChat, userId: string, res: Response) => {
+  const participant = chat.participants.find(participant => participant.id.toString() === userId);
+  if (participant === undefined || !acceptedRole.includes(participant.role)) {
+    return res.status(403).json({
+      code: 403,
+      message: "Vous n'êtes pas autorisé à ajouter un utilisateur à ce chat",
+    });
+  }
+}
 
 // Create chat
 export const createChat = async (req: IRequestUser, res: Response, next: NextFunction) => {
@@ -116,22 +126,14 @@ export const getChatInfo = async (req: IRequestUser, res: Response, next: NextFu
 
 // Send chat request
 export const addUserToChat = async (req: IRequestUser, res: Response, next: NextFunction) => {
-  const errors = validationResult(req);
-  await validationErrorsUtil(errors, res);
-
   try {
     const {id} = req.params;
 
     // Check if user is admin or moderator of the chat
     const chat = await chatService.getChatInfo(id);
 
-    const participant = chat.participants.find(participant => participant.id.toString() === req.user.id);
-    if (participant.role !== "admin" && participant.role !== "moderator") {
-      return res.status(403).json({
-        code: 403,
-        message: "Vous n'êtes pas autorisé à ajouter un utilisateur à ce chat",
-      });
-    }
+    // Check if user is admin or moderator of the chat
+    await participantRoleVerify(["admin", "moderator"], chat, req.user.id, res);
 
     // Add user to chat
     await chatService.addUserToChat(id, req.body.userId);
@@ -148,9 +150,6 @@ export const addUserToChat = async (req: IRequestUser, res: Response, next: Next
 
 // Get chat request
 export const getChatRequests = async (req: IRequestUser, res: Response, next: NextFunction) => {
-  const errors = validationResult(req);
-  await validationErrorsUtil(errors, res);
-
   try {
     // Get chats requests
     const requests = await chatService.getChatRequests(req.user.id);
@@ -218,13 +217,7 @@ export const updateChatInfo = async (req: IRequestUser, res: Response, next: Nex
 
     // Check if user is admin or moderator of the chat
     const chat = await chatService.getChatInfo(id);
-    const participant = chat.participants.find(participant => participant.id.toString() === req.user.id);
-    if (participant.role !== "admin" && participant.role !== "moderator") {
-      return res.status(403).json({
-        code: 403,
-        message: "Vous n'êtes pas autorisé à modifier les informations de ce chat",
-      });
-    }
+    await participantRoleVerify(["admin", "moderator"], chat, req.user.id, res);
 
     // Update chat info
     await chatService.updateChatInfo(id, req.body);
@@ -249,14 +242,7 @@ export const updateChatParticipantRole = async (req: IRequestUser, res: Response
 
     // Check if user is admin of the chat
     const chat = await chatService.getChatInfo(id);
-    const participant = chat.participants.find(participant => participant.id.toString() === req.user.id);
-
-    if (participant === undefined || participant.role !== "admin") {
-      return res.status(403).json({
-        code: 403,
-        message: "Vous n'êtes pas autorisé à modifier les rôles des participants de ce chat",
-      });
-    }
+    await participantRoleVerify(["admin"], chat, req.user.id, res);
 
     const participantToChange = chat.participants.find(participant => participant.id.toString() === req.body.userId);
     if (participantToChange === undefined) {
@@ -279,7 +265,6 @@ export const updateChatParticipantRole = async (req: IRequestUser, res: Response
   }
 }
 
-
 // Remove user from chat
 export const removeUserFromChat = async (req: IRequestUser, res: Response, next: NextFunction) => {
   const errors = validationResult(req);
@@ -290,13 +275,7 @@ export const removeUserFromChat = async (req: IRequestUser, res: Response, next:
 
     // Check if user is admin or moderator of the chat
     const chat = await chatService.getChatInfo(id);
-    const participant = chat.participants.find(participant => participant.id.toString() === req.user.id);
-    if (participant === undefined || (participant.role !== "admin" && participant.role !== "moderator")) {
-      return res.status(403).json({
-        code: 403,
-        message: "Vous n'êtes pas autorisé à supprimer un utilisateur de ce chat",
-      });
-    }
+    await participantRoleVerify(["admin", "moderator"], chat, req.user.id, res);
 
     // Check if user is in the chat
     const participantToRemove = chat.participants.find(participant => participant.id.toString() === req.body.userId);
@@ -322,9 +301,6 @@ export const removeUserFromChat = async (req: IRequestUser, res: Response, next:
 
 // Leave chat
 export const leaveChat = async (req: IRequestUser, res: Response, next: NextFunction) => {
-  const errors = validationResult(req);
-  await validationErrorsUtil(errors, res);
-
   try {
     const {id} = req.params;
 
@@ -343,22 +319,12 @@ export const leaveChat = async (req: IRequestUser, res: Response, next: NextFunc
 
 // Delete chat
 export const deleteChat = async (req: IRequestUser, res: Response, next: NextFunction) => {
-  const errors = validationResult(req);
-  await validationErrorsUtil(errors, res);
-
   try {
     const {id} = req.params;
 
     // Check if user is admin of the chat
     const chat = await chatService.getChatInfo(id);
-    const participant = chat.participants.find(participant => participant.id.toString() === req.user.id);
-
-    if (participant === undefined || participant.role !== "admin") {
-      return res.status(403).json({
-        code: 403,
-        message: "Vous n'êtes pas autorisé à supprimer ce chat",
-      });
-    }
+    await participantRoleVerify(["admin"], chat, req.user.id, res);
 
     // Delete chat
     await chatService.deleteChat(id);
@@ -375,9 +341,6 @@ export const deleteChat = async (req: IRequestUser, res: Response, next: NextFun
 
 // Search chats by name or part of name (only for participants)
 export const searchChats = async (req: IRequestUser, res: Response, next: NextFunction) => {
-  const errors = validationResult(req);
-  await validationErrorsUtil(errors, res);
-
   try {
     const {query, limit, offset} = req.query;
 

@@ -1,8 +1,23 @@
 import Chat from "../models/Chat.model";
 import User from "../models/User.model";
 import Message from "../models/Message.model";
-import { IChatCreation, IChatUpdate } from "../types/chat.type";
+import { IChatCreation, IChatDocumentMongo, IChatUpdate, IGetChat } from "../types/chat.type";
 import ChatRequest from "../models/ChatRequest.model";
+
+// Modify chat for get unread messages and last message
+const unreadAndLastMessage = async (chats: IChatDocumentMongo[], userId: string) => {
+  return await Promise.all(
+    chats.map(async (chat) => {
+      const messages = await Message.find({chat: chat._id, readBy: {$ne: userId}});
+      const lastMessage = await Message.findOne({chat: chat._id}).sort({createdAt: -1});
+      return {
+        chat,
+        unreadMessages: messages.length,
+        lastMessage: lastMessage ? lastMessage.content : null,
+      };
+    })
+  );
+}
 
 export const createChat = async (data: IChatCreation, participantsForRequest: string[]) => {
   const newChat = new Chat(data);
@@ -45,24 +60,14 @@ export const createPrivateChat = async (participantsId: string[]) => {
 }
 
 export const getUserChats = async (userId: string, limit: number, offset: number) => {
-  // Get chats
-  const chats = await Chat.find({'participants.user': userId}).skip(offset).limit(limit);
+  // Get chats of the user and public chats
+  const chats = await Chat.find({$or: [{type: "public"}, {'participants.user': userId}]}).skip(offset).limit(limit);
 
-  // Get unread messages and last message for each chat
-  return await Promise.all(
-    chats.map(async (chat) => {
-      const messages = await Message.find({chat: chat._id, readBy: {$ne: userId}});
-      const lastMessage = await Message.findOne({chat: chat._id}).sort({createdAt: -1});
-      return {
-        chat,
-        unreadMessages: messages.length,
-        lastMessage: lastMessage ? lastMessage.content : null,
-      };
-    })
-  );
+  // Get unread messages and last message for each chat and return the results
+  return await unreadAndLastMessage(chats, userId);
 }
 
-export const getChatInfo = async (chatId: string) => {
+export const getChatInfo = async (chatId: string): Promise<IGetChat> => {
   const chatInfo = await Chat.findById(chatId, {
     name: 1,
     description: 1,
@@ -298,15 +303,5 @@ export const searchChats = async (userId: string, search: string, limit: number,
   }).skip(offset - 1).limit(limit);
 
   // Get unread messages and last message for each chat
-  return await Promise.all(
-    chats.map(async (chat) => {
-      const messages = await Message.find({chat: chat._id, readBy: {$ne: userId}});
-      const lastMessage = await Message.findOne({chat: chat._id}).sort({createdAt: -1});
-      return {
-        chat,
-        unreadMessages: messages.length,
-        lastMessage: lastMessage ? lastMessage.content : null,
-      };
-    })
-  );
+  return await unreadAndLastMessage(chats, userId);
 }
