@@ -51,6 +51,10 @@ const userSchema = new Schema({
     user: {type: Schema.Types.ObjectId, ref: 'User'},
     date: {type: Date, default: Date.now},
   }],
+  blockedChat: [{
+    chat: {type: Schema.Types.ObjectId, ref: 'Chat'},
+    date: {type: Date, default: Date.now},
+  }],
   createdAt: {type: Date, default: Date.now},
   updatedAt: Date,
   deletedAt: Date,
