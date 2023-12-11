@@ -9,6 +9,7 @@ import authRoute from "./routes/auth.route";
 import userRoute from "./routes/user.route";
 import socialRoute from "./routes/social.route";
 import chatRoute from "./routes/chat.route";
+import messageRoute from "./routes/message.route";
 
 /* Creating the application */
 const app: Application = express();
@@ -24,6 +25,8 @@ app.use("/api/user", checkAccessToken, userRoute);
 app.use("/api/social", checkAccessToken, socialRoute);
 
 app.use("/api/chat", checkAccessToken, chatRoute);
+
+app.use("/api/message", checkAccessToken, messageRoute);
 
 /* Handling errors */
 app.use(errorHandler);
