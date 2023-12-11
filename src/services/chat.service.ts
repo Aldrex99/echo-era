@@ -61,8 +61,12 @@ export const createPrivateChat = async (participantsId: string[]) => {
 }
 
 export const getUserChats = async (userId: string, limit: number, offset: number) => {
+  if (offset < 1 || limit < 1) {
+    throw new AppError("Les paramètres limit et offset doivent être supérieurs à 0", 422);
+  }
+
   // Get chats of the user and public chats
-  const chats = await Chat.find({$or: [{type: "public"}, {'participants.user': userId}]}).skip(offset).limit(limit);
+  const chats = await Chat.find({$or: [{type: "public"}, {'participants.user': userId}]}).skip(offset - 1).limit(limit);
 
   // Get unread messages and last message for each chat and return the results
   return await unreadAndLastMessage(chats, userId);
@@ -117,6 +121,12 @@ export const addUserToChat = async (chatId: string, userId: string) => {
   const user = await User.findOne({_id: userId, blockedChats: {$elemMatch: {chat: chatId}}});
   if (user) {
     throw new AppError("Impossible d'envoyer une invitation à cet utilisateur", 403);
+  }
+
+  // Check if a request already exists
+  const requestExist = await ChatRequest.findOne({to: userId, chatId: chatId});
+  if (requestExist) {
+    throw new AppError("Une demande a déjà été envoyée à cet utilisateur", 403);
   }
 
   // Check if user is already in the chat

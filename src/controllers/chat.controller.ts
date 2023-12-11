@@ -65,6 +65,9 @@ export const createChat = async (req: IRequestUser, res: Response, next: NextFun
 
 // Get user chats
 export const getUserChats = async (req: IRequestUser, res: Response, next: NextFunction) => {
+  const errors = validationResult(req);
+  await validationErrorsUtil(errors, res);
+
   try {
     const {limit, offset} = req.query;
 
@@ -84,6 +87,9 @@ export const getUserChats = async (req: IRequestUser, res: Response, next: NextF
 
 // Get chat info
 export const getChatInfo = async (req: IRequestUser, res: Response, next: NextFunction) => {
+  const errors = validationResult(req);
+  await validationErrorsUtil(errors, res);
+
   try {
     const {id} = req.params;
 
@@ -109,6 +115,9 @@ export const getChatInfo = async (req: IRequestUser, res: Response, next: NextFu
 
 // Send chat request
 export const addUserToChat = async (req: IRequestUser, res: Response, next: NextFunction) => {
+  const errors = validationResult(req);
+  await validationErrorsUtil(errors, res);
+
   try {
     const {id} = req.params;
 
@@ -278,6 +287,9 @@ export const removeUserFromChat = async (req: IRequestUser, res: Response, next:
 
 // Leave chat
 export const leaveChat = async (req: IRequestUser, res: Response, next: NextFunction) => {
+  const errors = validationResult(req);
+  await validationErrorsUtil(errors, res);
+
   try {
     const {id} = req.params;
 
@@ -296,6 +308,9 @@ export const leaveChat = async (req: IRequestUser, res: Response, next: NextFunc
 
 // Delete chat
 export const deleteChat = async (req: IRequestUser, res: Response, next: NextFunction) => {
+  const errors = validationResult(req);
+  await validationErrorsUtil(errors, res);
+
   try {
     const {id} = req.params;
 
@@ -318,6 +333,9 @@ export const deleteChat = async (req: IRequestUser, res: Response, next: NextFun
 
 // Search chats by name or part of name (only for participants)
 export const searchChats = async (req: IRequestUser, res: Response, next: NextFunction) => {
+  const errors = validationResult(req);
+  await validationErrorsUtil(errors, res);
+
   try {
     const {query, limit, offset} = req.query;
 

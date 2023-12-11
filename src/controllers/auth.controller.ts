@@ -40,7 +40,7 @@ export const register = async (req: Request, res: Response, next: NextFunction) 
     const user = await authService.createUser(data);
 
     // Send email verification
-    await mail.sendMails(email, "Vérification d'email", `<p>Veuillez cliquer sur le lien suivant pour vérifier votre email : <a href="${process.env.CLIENT_URL}/verify-email/${data.verificationCode}">Lien</a></p>`);
+    await mail.sendMails(email, "Vérification d'email", `<p>Veuillez cliquer sur le lien suivant pour vérifier votre email : <a href="${process.env.CLIENT_URL}/verify-email/${data.verificationCode}" target="_blank">Lien</a></p>`);
 
     return res.status(201).json({
       message: "Utilisateur créé",
@@ -140,7 +140,7 @@ export const forgotPassword = async (req: Request, res: Response, next: NextFunc
     await authService.forgotPassword(email, passwordResetCode);
 
     // Send email reset password
-    await mail.sendMails(email, "Réinitialisation de mot de passe", `<p>Veuillez cliquer sur le lien suivant pour réinitialiser votre mot de passe : <a href="${process.env.CLIENT_URL}/reset-password/${passwordResetCode}">Lien</a></p>`);
+    await mail.sendMails(email, "Réinitialisation de mot de passe", `<p>Veuillez cliquer sur le lien suivant pour réinitialiser votre mot de passe : <a href="${process.env.CLIENT_URL}/reset-password/${passwordResetCode}" target="_blank">Lien</a></p>`);
 
     return res.status(200).json({
       message: "Email de réinitialisation de mot de passe envoyé",

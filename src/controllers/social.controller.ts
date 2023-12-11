@@ -28,6 +28,9 @@ export const searchUsers = async (req: Request, res: Response, next: NextFunctio
 
 // Get other user profile
 export const getOtherProfile = async (req: Request, res: Response, next: NextFunction) => {
+  const errors = validationResult(req);
+  await validationErrorsUtil(errors, res);
+
   try {
     const {id} = req.params;
 
@@ -85,9 +88,6 @@ export const addFriend = async (req: IRequestUser, res: Response, next: NextFunc
 
 // Get friends requests
 export const getFriendRequests = async (req: IRequestUser, res: Response, next: NextFunction) => {
-  const errors = validationResult(req);
-  await validationErrorsUtil(errors, res);
-
   try {
     // Get friends requests
     const requests = await socialService.getFriendRequests(req.user.id);
@@ -231,9 +231,6 @@ export const unblockUser = async (req: IRequestUser, res: Response, next: NextFu
 
 // Get blocked users
 export const getBlockedUsers = async (req: IRequestUser, res: Response, next: NextFunction) => {
-  const errors = validationResult(req);
-  await validationErrorsUtil(errors, res);
-
   try {
     // Get blocked users
     const blockedUsers = await socialService.getBlockedUsers(req.user.id);
