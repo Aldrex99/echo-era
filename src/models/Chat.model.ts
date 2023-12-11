@@ -1,13 +1,12 @@
 import { model, Schema } from "mongoose";
 
 const chatSchema = new Schema({
-  name: {type: String, required: true},
+  name: String,
   description: String,
-  isPrivate: {type: Boolean, default: false},
-  isPublic: {type: Boolean, default: false},
+  type: {type: String, enum: ['public', 'private', 'group'], default: 'private'},
   participants: [{
-    user: {type: Schema.Types.ObjectId, ref: 'User', enum: ['user', 'moderator', 'admin']},
-    role: {type: String, default: 'user'},
+    user: {type: Schema.Types.ObjectId, ref: 'User'},
+    role: {type: String, default: 'user', enum: ['user', 'moderator', 'admin']},
     date: {type: Date, default: Date.now},
   }],
   messages: [{

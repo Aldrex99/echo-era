@@ -3,6 +3,7 @@ import { userForUser } from "../utils/formatUser.util";
 import User from "../models/User.model";
 import FriendRequest from "../models/FriendRequest.model";
 import Report from "../models/Report.model";
+import { createPrivateChat } from "./chat.service";
 
 export const searchUser = async (query: string, limit: number) => {
   // Get users
@@ -107,6 +108,9 @@ export const acceptFriendRequest = async (userId: string, requestId: string) => 
   // Update users friend
   await User.findOneAndUpdate({_id: userId}, {$push: {friends: {friend: request.from}}});
   await User.findOneAndUpdate({_id: request.from}, {$push: {friends: {friend: userId}}});
+
+  // Create a chat between the two users
+  await createPrivateChat([userId, request.from.toString()])
 
   // Delete request
   await FriendRequest.findOneAndDelete({_id: requestId});
