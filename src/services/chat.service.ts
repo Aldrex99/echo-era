@@ -3,6 +3,7 @@ import User from "../models/User.model";
 import Message from "../models/Message.model";
 import { IChatCreation, IChatDocumentMongo, IChatUpdate, IGetChat } from "../types/chat.type";
 import ChatRequest from "../models/ChatRequest.model";
+import { AppError } from "../utils/error.util";
 
 // Modify chat for get unread messages and last message
 const unreadAndLastMessage = async (chats: IChatDocumentMongo[], userId: string) => {
@@ -39,7 +40,7 @@ export const createPrivateChat = async (participantsId: string[]) => {
   // Check if participants are valid
   const participants = await User.find({_id: {$in: participantsId}});
   if (participants.length !== participantsId.length) {
-    throw new Error("Un ou plusieurs utilisateurs n'existent pas");
+    throw new AppError("Un ou plusieurs utilisateurs n'existent pas", 422);
   }
 
   // Create chat data
@@ -60,8 +61,12 @@ export const createPrivateChat = async (participantsId: string[]) => {
 }
 
 export const getUserChats = async (userId: string, limit: number, offset: number) => {
+  if (offset < 1 || limit < 1) {
+    throw new AppError("Les paramètres limit et offset doivent être supérieurs à 0", 422);
+  }
+
   // Get chats of the user and public chats
-  const chats = await Chat.find({$or: [{type: "public"}, {'participants.user': userId}]}).skip(offset).limit(limit);
+  const chats = await Chat.find({$or: [{type: "public"}, {'participants.user': userId}]}).skip(offset - 1).limit(limit);
 
   // Get unread messages and last message for each chat and return the results
   return await unreadAndLastMessage(chats, userId);
@@ -77,7 +82,7 @@ export const getChatInfo = async (chatId: string): Promise<IGetChat> => {
   });
 
   if (!chatInfo) {
-    throw new Error("Le chat n'existe pas");
+    throw new AppError("Le chat n'existe pas", 404);
   }
 
   // Retrieve usernames of the participants and wait for the results
@@ -109,19 +114,25 @@ export const addUserToChat = async (chatId: string, userId: string) => {
 
   // Check if chat exists
   if (!chat) {
-    throw new Error("Le chat n'existe pas");
+    throw new AppError("Le chat n'existe pas", 404);
   }
 
   // Check if user blocked the chat
   const user = await User.findOne({_id: userId, blockedChats: {$elemMatch: {chat: chatId}}});
   if (user) {
-    throw new Error("Impossible d'envoyer une invitation à cet utilisateur");
+    throw new AppError("Impossible d'envoyer une invitation à cet utilisateur", 403);
+  }
+
+  // Check if a request already exists
+  const requestExist = await ChatRequest.findOne({to: userId, chatId: chatId});
+  if (requestExist) {
+    throw new AppError("Une demande a déjà été envoyée à cet utilisateur", 403);
   }
 
   // Check if user is already in the chat
   const participant = chat.participants.find(participant => participant.user.toString() === userId);
   if (participant) {
-    throw new Error("L'utilisateur fait déjà partie du chat");
+    throw new AppError("L'utilisateur fait déjà partie du chat", 403);
   }
 
   // Sent request to user
@@ -161,12 +172,12 @@ const chatRequestExists = async (requestId: string, userId: string) => {
 
   // Check if request exists
   if (!request) {
-    throw new Error("La demande n'existe pas");
+    throw new AppError("La demande n'existe pas", 404);
   }
 
   // Check if request is for the user
   if (request.to.toString() !== userId) {
-    throw new Error("Vous ne pouvez pas accepter cette demande");
+    throw new AppError("Vous n'êtes pas autorisé à accepter cette demande", 403);
   }
 
   // Retrieve chat
@@ -174,13 +185,13 @@ const chatRequestExists = async (requestId: string, userId: string) => {
 
   // Check if chat exists
   if (!chat) {
-    throw new Error("Le chat n'existe pas");
+    throw new AppError("Le chat n'existe pas", 404);
   }
 
   // Check if user is already in the chat
   const participant = chat.participants.find(participant => participant.user.toString() === userId);
   if (participant) {
-    throw new Error("Vous faites déjà partie du chat");
+    throw new AppError("Vous faites déjà partie du chat", 403);
   }
 
   return chat;
@@ -218,7 +229,7 @@ export const updateChatInfo = async (chatId: string, data: IChatUpdate) => {
 
   // Check if chat exists
   if (!chat) {
-    throw new Error("Le chat n'existe pas");
+    throw new AppError("Le chat n'existe pas", 404);
   }
 
   // Update chat
@@ -231,7 +242,7 @@ export const updateChatParticipantRole = async (chatId: string, userId: string, 
 
   // Check if chat exists
   if (!chat) {
-    throw new Error("Le chat n'existe pas");
+    throw new AppError("Le chat n'existe pas", 404);
   }
 
   // Update chat participant role
@@ -244,13 +255,13 @@ export const removeUserFromChat = async (chatId: string, userId: string) => {
 
   // Check if chat exists
   if (!chat) {
-    throw new Error("Le chat n'existe pas");
+    throw new AppError("Le chat n'existe pas", 404);
   }
 
   // Check if user is in the chat
   const participant = chat.participants.find(participant => participant.user.toString() === userId);
   if (!participant) {
-    throw new Error("L'utilisateur ne fait pas partie du chat");
+    throw new AppError("L'utilisateur ne fait pas partie du chat", 403);
   }
 
   // Remove user from chat
@@ -263,13 +274,13 @@ export const leaveChat = async (chatId: string, userId: string) => {
 
   // Check if chat exists
   if (!chat) {
-    throw new Error("Le chat n'existe pas");
+    throw new AppError("Le chat n'existe pas", 404);
   }
 
   // Check if user is in the chat
   const participant = chat.participants.find(participant => participant.user.toString() === userId);
   if (!participant) {
-    throw new Error("Vous n'êtes pas dans ce chat");
+    throw new AppError("Vous n'êtes pas dans ce chat", 403);
   }
 
   // Remove user from chat
@@ -282,7 +293,7 @@ export const deleteChat = async (chatId: string) => {
 
   // Check if chat exists
   if (!chat) {
-    throw new Error("Le chat n'existe pas");
+    throw new AppError("Le chat n'existe pas", 404);
   }
 
   // Delete chat
@@ -291,7 +302,7 @@ export const deleteChat = async (chatId: string) => {
 
 export const searchChats = async (userId: string, search: string, limit: number, offset: number) => {
   if (offset < 1 || limit < 1) {
-    throw new Error("Les paramètres limit et offset doivent être supérieurs à 0");
+    throw new AppError("Les paramètres limit et offset doivent être supérieurs à 0", 422);
   }
 
   // Search chats

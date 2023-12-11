@@ -6,10 +6,10 @@ const router: Router = Router();
 
 /* Routes */
 // GET api/social/search?query="..."&limit=10 - Search users by username
-router.get("/search", socialController.searchUsers);
+router.get("/search", socialValidator.searchUsers, socialController.searchUsers);
 
 // GET api/social/profile/:id - Get other user profile
-router.get("/profile/:id", socialController.getOtherProfile);
+router.get("/profile/:id", socialValidator.getOtherProfile, socialController.getOtherProfile);
 
 // GET api/social/friends - Get friends
 router.get("/friends", socialController.getFriends);

@@ -3,6 +3,7 @@ import { IPersonalUserUpdate, IUserMongo } from "../types/user.type";
 import { ISearchFields } from "../types/global.type";
 import { emailExists, usernameExists } from "./auth.service";
 import FriendRequest from "../models/FriendRequest.model";
+import { AppError } from "../utils/error.util";
 
 // Get user by id
 export const getUserById = async (id: string) => {
@@ -14,7 +15,7 @@ export const updateUser = async (user: IUserMongo, data: IPersonalUserUpdate) =>
   if (data.username && data.username !== user.username) {
     const usernameAlreadyExists = await usernameExists(data.username);
     if (usernameAlreadyExists.length > 0) {
-      throw new Error("Ce nom d'utilisateur est déjà utilisé");
+      throw new AppError("Ce nom d'utilisateur est déjà utilisé", 422);
     }
     user.previousNames.push({username: user.username, date: new Date()});
     user.username = data.username;
@@ -22,7 +23,7 @@ export const updateUser = async (user: IUserMongo, data: IPersonalUserUpdate) =>
   if (data.email && data.email !== user.email) {
     const emailAlreadyExists = await emailExists(data.email);
     if (emailAlreadyExists.length > 0) {
-      throw new Error("Cet email est déjà utilisé");
+      throw new AppError("Cet email est déjà utilisé", 422);
     }
     user.previousEmails.push({email: user.email, date: new Date()});
     user.email = data.email;

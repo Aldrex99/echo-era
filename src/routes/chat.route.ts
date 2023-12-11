@@ -9,13 +9,13 @@ const router: Router = Router();
 router.post("/", chatValidator.createChat, chatController.createChat);
 
 // GET api/chat/user - Get chats of the user
-router.get("/user", chatController.getUserChats);
+router.get("/user", chatValidator.getUserChats, chatController.getUserChats);
 
 // GET api/chat/get/:id - Get chat info
-router.get("/get/:id", chatController.getChatInfo);
+router.get("/get/:id", chatValidator.getChatInfo, chatController.getChatInfo);
 
 // POST api/chat/add-user/:id - Add user to chat
-router.post("/add-user/:id", chatController.addUserToChat);
+router.post("/add-user/:id", chatValidator.addUserToChat, chatController.addUserToChat);
 
 // GET api/chat/requests - Get chat request of the user
 router.get("/requests", chatController.getChatRequests);
@@ -36,12 +36,12 @@ router.post("/update-participant-role/:id", chatValidator.updateChatParticipantR
 router.post("/remove-participant/:id", chatValidator.removeUserFromChat, chatController.removeUserFromChat);
 
 // POST api/chat/leave-chat/:id - Leave chat
-router.post("/leave-chat/:id", chatController.leaveChat);
+router.post("/leave-chat/:id", chatValidator.leaveChat, chatController.leaveChat);
 
 // DELETE api/chat/:id - Delete chat
-router.delete("/:id", chatController.deleteChat);
+router.delete("/:id", chatValidator.deleteChat, chatController.deleteChat);
 
 // GET api/chat/search-chat?query="..."&limit=10&offset=10 - Search chat
-router.get("/search-chat", chatController.searchChats);
+router.get("/search-chat", chatValidator.searchChats, chatController.searchChats);
 
 export default router;

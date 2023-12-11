@@ -53,6 +53,7 @@ export const register = [
 export const verifyEmail = [
   body('verificationCode')
   .isString()
+  .isUUID(4)
   .withMessage('Le code de vérification doit être une chaîne de caractères.')
   .not()
   .matches(/^$|\s/)
@@ -89,6 +90,7 @@ export const forgotPassword = [
 export const resetPassword = [
   body('passwordResetCode')
   .isString()
+  .isUUID(4)
   .withMessage('Le token doit être une chaîne de caractères.'),
   passwordValidator,
   body('confirmPassword')

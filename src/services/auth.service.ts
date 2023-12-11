@@ -2,6 +2,7 @@ import User from "../models/User.model";
 import { IUserCreation } from "../types/user.type";
 import { checkPassword, hashPassword } from "../utils/password.util";
 import { personalUser } from "../utils/formatUser.util";
+import { AppError } from "../utils/error.util";
 
 export const emailExists = async (email: string) => {
   return User.find({email: email});
@@ -36,12 +37,12 @@ export const login = async (email: string, password: string) => {
   const user = await User.find({email: email});
 
   if (!user) {
-    throw new Error("L'email ou le mot de passe est incorrect");
+    throw new AppError("L'email ou le mot de passe est incorrect", 401);
   }
   // Check password
   const isMatch = await checkPassword(password, user[0].password);
   if (!isMatch) {
-    throw new Error("L'email ou le mot de passe est incorrect");
+    throw new AppError("L'email ou le mot de passe est incorrect", 401);
   }
   // Format user and return it
   return personalUser(user[0]);
@@ -54,7 +55,7 @@ export const logout = async (userId: string) => {
     });
   } catch (err) {
     if (err) {
-      throw new Error("Une erreur est survenue lors de la déconnexion");
+      throw new AppError("Une erreur est survenue lors de la déconnexion", 500);
     }
   }
 }
@@ -67,7 +68,7 @@ export const forgotPassword = async (email: string, passwordResetCode: string) =
   });
 
   if (!user) {
-    throw new Error("Une erreur est survenue lors de la réinitialisation du mot de passe");
+    throw new AppError("Une erreur est survenue", 500);
   }
 }
 
@@ -75,16 +76,16 @@ export const resetPassword = async (passwordResetCode: string, password: string)
   const user = await User.findOne({passwordResetCode: passwordResetCode});
 
   if (!user) {
-    throw new Error("Une erreur est survenue lors de la réinitialisation du mot de passe");
+    throw new AppError("Une erreur est survenue lors de la réinitialisation du mot de passe", 500);
   }
 
   const isMatch = await checkPassword(password, user.password);
   if (isMatch) {
-    throw new Error("Le nouveau mot de passe doit être différent de l'ancien");
+    throw new AppError("Le nouveau mot de passe doit être différent de l'ancien", 401);
   }
 
   if (user.passwordResetCodeExpiresAt < new Date()) {
-    throw new Error("Le code de réinitialisation du mot de passe a expiré");
+    throw new AppError("Le code de réinitialisation du mot de passe a expiré", 401);
   }
 
   await User.findOneAndUpdate({passwordResetCode: passwordResetCode}, {
@@ -98,7 +99,7 @@ export const resetPassword = async (passwordResetCode: string, password: string)
 export const iatBeforeLastLogout = async (userId: string, iat: number) => {
   const user = await User.findOne({_id: userId});
   if (!user) {
-    throw new Error("Une erreur est survenue lors de la vérification de votre compte");
+    throw new AppError("Une erreur est survenue lors de la vérification de votre compte", 500);
   }
 
   const lastLogout = user.lastLogout;

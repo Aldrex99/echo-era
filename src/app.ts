@@ -1,6 +1,7 @@
 /* Importing modules */
 import express, { Application } from 'express';
 import applyMiddlewares from "./middlewares/index.middleware";
+import { errorHandler } from "./middlewares/error.middleware";
 import { checkAccessToken } from "./middlewares/token.middleware";
 
 /* Importing routes */
@@ -23,6 +24,9 @@ app.use("/api/user", checkAccessToken, userRoute);
 app.use("/api/social", checkAccessToken, socialRoute);
 
 app.use("/api/chat", checkAccessToken, chatRoute);
+
+/* Handling errors */
+app.use(errorHandler);
 
 /* Exporting the application */
 export default app;
