@@ -4,14 +4,12 @@ import { validationResult } from "express-validator";
 import { validationErrorsUtil } from "../utils/validationErrors.util";
 import * as chatService from "../services/chat.service";
 import { IChatCreation, IGetChat } from "../types/chat.type";
+import { classicFailOrErrorResponse } from "../utils/error.util";
 
 const participantRoleVerify = async (acceptedRole: string[], chat: IGetChat, userId: string, res: Response) => {
   const participant = chat.participants.find(participant => participant.id.toString() === userId);
   if (participant === undefined || !acceptedRole.includes(participant.role)) {
-    return res.status(403).json({
-      code: 403,
-      message: "Vous n'êtes pas autorisé à ajouter un utilisateur à ce chat",
-    });
+    classicFailOrErrorResponse("Vous n'êtes pas autorisé à ajouter un utilisateur à ce chat", 403, res);
   }
 }
 
@@ -25,34 +23,22 @@ export const createChat = async (req: IRequestUser, res: Response, next: NextFun
 
     // Only admin can create a public chat
     if (type === "public" && req.user.role !== "admin") {
-      return res.status(403).json({
-        code: 403,
-        message: "Vous n'êtes pas autorisé à créer un chat public",
-      });
+      classicFailOrErrorResponse("Vous n'êtes pas autorisé à créer un chat public", 403, res);
     }
 
     // For group chat, 3 participants minimum
     if (type === "group" && participants.length < 2) {
-      return res.status(422).json({
-        code: 422,
-        message: "Un chat de groupe doit avoir au moins 3 participants",
-      });
+      classicFailOrErrorResponse("Un chat de groupe doit avoir au moins 3 participants", 422, res);
     }
 
     // Can't create a chat with himself
     if (participants.includes(req.user.id)) {
-      return res.status(422).json({
-        code: 422,
-        message: "Vous ne pouvez pas créer un chat avec vous-même",
-      });
+      classicFailOrErrorResponse("Vous ne pouvez pas créer un chat avec vous-même", 422, res);
     }
 
     // Can't create a private chat
     if (type === "private") {
-      return res.status(422).json({
-        code: 422,
-        message: "Vous ne pouvez pas créer un chat privé",
-      });
+      classicFailOrErrorResponse("Vous ne pouvez pas créer un chat privé", 422, res);
     }
 
     // Create chat data
@@ -104,10 +90,7 @@ export const getChatInfo = async (req: IRequestUser, res: Response, next: NextFu
     // Check if user is participant of the chat if it's not a public chat
     const chat = await chatService.getChatInfo(id);
     if (chat.type !== "public" && !chat.participants.find(participant => participant.id.toString() === req.user.id)) {
-      return res.status(403).json({
-        code: 403,
-        message: "Vous n'êtes pas autorisé à accéder à ce chat",
-      });
+      classicFailOrErrorResponse("Vous n'êtes pas autorisé à accéder à ce chat", 403, res);
     }
 
     // Get chat
@@ -246,10 +229,7 @@ export const updateChatParticipantRole = async (req: IRequestUser, res: Response
 
     const participantToChange = chat.participants.find(participant => participant.id.toString() === req.body.userId);
     if (participantToChange === undefined) {
-      return res.status(422).json({
-        code: 422,
-        message: "L'utilisateur n'est pas dans le chat",
-      });
+      classicFailOrErrorResponse("L'utilisateur n'est pas dans le chat", 422, res);
     }
 
     // Update chat participant role
@@ -280,10 +260,7 @@ export const removeUserFromChat = async (req: IRequestUser, res: Response, next:
     // Check if user is in the chat
     const participantToRemove = chat.participants.find(participant => participant.id.toString() === req.body.userId);
     if (participantToRemove === undefined) {
-      return res.status(422).json({
-        code: 422,
-        message: "L'utilisateur n'est pas dans le chat",
-      });
+      classicFailOrErrorResponse("L'utilisateur n'est pas dans le chat", 422, res);
     }
 
     // Remove user from chat

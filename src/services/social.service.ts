@@ -4,6 +4,7 @@ import User from "../models/User.model";
 import FriendRequest from "../models/FriendRequest.model";
 import Report from "../models/Report.model";
 import { createPrivateChat } from "./chat.service";
+import { AppError } from "../utils/error.util";
 
 export const searchUser = async (query: string, limit: number) => {
   // Get users
@@ -44,19 +45,19 @@ export const addFriend = async (userId: string, id: string) => {
   // Check if user is already friend with the other user
   const isFriend = await User.findOne({_id: userId, 'friends.friend': id});
   if (isFriend) {
-    throw new Error("Vous êtes déjà ami avec cet utilisateur");
+    throw new AppError("Vous êtes déjà ami avec cet utilisateur", 422);
   }
 
   // Check if user is blocked by the other user
   const isBlocked = await User.findOne({_id: id, 'blockedUsers.user': userId});
   if (isBlocked) {
-    throw new Error("Cet utilisateur vous a bloqué");
+    throw new AppError("Cet utilisateur vous a bloqué", 403);
   }
 
   // Check if request already exists
   const request = await FriendRequest.findOne({$or: [{from: userId, to: id}, {from: id, to: userId}]});
   if (request) {
-    throw new Error("Une demande d'ami existe déjà");
+    throw new AppError("Une demande a déjà été envoyée", 422);
   }
 
   // Create request
@@ -97,12 +98,12 @@ export const acceptFriendRequest = async (userId: string, requestId: string) => 
 
   // Check if request exists
   if (!request) {
-    throw new Error("La demande n'existe pas");
+    throw new AppError("La demande n'existe pas", 404);
   }
 
   // Check if request is for the user
   if (request.to.toString() !== userId) {
-    throw new Error("La demande ne vous est pas destinée");
+    throw new AppError("Vous n'êtes pas autorisé à accepter cette demande", 403);
   }
 
   // Update users friend
@@ -122,12 +123,12 @@ export const declineFriendRequest = async (userId: string, requestId: string) =>
 
   // Check if request exists
   if (!request) {
-    throw new Error("La demande n'existe pas");
+    throw new AppError("La demande n'existe pas", 404);
   }
 
   // Check if request is for the user
   if (request.to.toString() !== userId) {
-    throw new Error("La demande ne vous est pas destinée");
+    throw new AppError("Vous n'êtes pas autorisé à refuser cette demande", 403);
   }
 
   // Delete request
@@ -140,12 +141,12 @@ export const cancelFriendRequest = async (userId: string, requestId: string) => 
 
   // Check if request exists
   if (!request) {
-    throw new Error("La demande n'existe pas");
+    throw new AppError("La demande n'existe pas", 404);
   }
 
   // Check if request is from the user
   if (request.from.toString() !== userId) {
-    throw new Error("Ce n'est pas vous qui avez envoyé la demande");
+    throw new AppError("Vous n'êtes pas autorisé à annuler cette demande", 403);
   }
 
   // Delete request
@@ -158,7 +159,7 @@ export const removeFriend = async (userId: string, friendId: string) => {
 
   // If the user is not friend with the other user
   if (!isFriend) {
-    throw new Error("Vous n'êtes pas ami avec cet utilisateur");
+    throw new AppError("Vous n'êtes pas ami avec cet utilisateur", 422);
   }
 
   // Remove friend from the user's friend list
@@ -177,7 +178,7 @@ export const blockUser = async (userId: string, id: string) => {
 
   // If the user does not exist
   if (!blockedUser) {
-    throw new Error("Cet utilisateur n'existe pas");
+    throw new AppError("Cet utilisateur n'existe pas", 404);
   }
 
   // Get user block list
@@ -188,7 +189,7 @@ export const blockUser = async (userId: string, id: string) => {
 
   // If the user is already blocked
   if (isAlreadyBlocked) {
-    throw new Error("Cet utilisateur est déjà bloqué");
+    throw new AppError("Cet utilisateur est déjà bloqué", 422);
   }
 
   // Block user
@@ -213,7 +214,7 @@ export const unblockUser = async (userId: string, id: string) => {
 
   // If the user does not exist
   if (!blockedUser) {
-    throw new Error("Cet utilisateur n'existe pas");
+    throw new AppError("Cet utilisateur n'existe pas", 404);
   }
 
   // Get user block list
@@ -224,7 +225,7 @@ export const unblockUser = async (userId: string, id: string) => {
 
   // If the user is not blocked
   if (!isBlocked) {
-    throw new Error("Cet utilisateur n'est pas bloqué");
+    throw new AppError("Cet utilisateur n'est pas bloqué", 422);
   }
 
   // Unblock user
@@ -252,7 +253,7 @@ export const reportUser = async (userId: string, id: string, messageId: string, 
 
   // If the user does not exist
   if (!reportedUser) {
-    throw new Error("Cet utilisateur n'existe pas");
+    throw new AppError("Cet utilisateur n'existe pas", 404);
   }
 
   // Create report

@@ -7,6 +7,7 @@ import * as mail from "../utils/mailer.util";
 import * as token from "../utils/tokens.util";
 import uuidGenerate from "../utils/uuid.util";
 import { validationErrorsUtil } from "../utils/validationErrors.util";
+import { classicFailOrErrorResponse } from "../utils/error.util";
 
 // Register a new user
 export const register = async (req: Request, res: Response, next: NextFunction) => {
@@ -19,19 +20,13 @@ export const register = async (req: Request, res: Response, next: NextFunction) 
     // Check if email exists
     const emailExists = await authService.emailExists(email);
     if (emailExists.length > 0) {
-      return res.status(400).json({
-        code: 400,
-        message: "L'email est déjà utilisé",
-      });
+      classicFailOrErrorResponse("L'email est déjà utilisé", 400, res);
     }
 
     // Check if username exists
     const usernameExists = await authService.usernameExists(username);
     if (usernameExists.length > 0) {
-      return res.status(400).json({
-        code: 400,
-        message: "Le nom d'utilisateur est déjà utilisé",
-      });
+      classicFailOrErrorResponse("Le nom d'utilisateur est déjà utilisé", 400, res);
     }
 
     const data: IUserCreation = {
@@ -67,10 +62,7 @@ export const verifyEmail = async (req: Request, res: Response, next: NextFunctio
     const userVerify = await authService.verifyEmail(verificationCode);
 
     if (!userVerify) {
-      return res.status(400).json({
-        code: 400,
-        message: "Le code de vérification est incorrect",
-      });
+      classicFailOrErrorResponse("Code de vérification invalide", 400, res);
     }
 
     return res.status(200).json({
@@ -87,7 +79,7 @@ export const verifyEmail = async (req: Request, res: Response, next: NextFunctio
 export const login = async (req: Request, res: Response, next: NextFunction) => {
   const errors = validationResult(req);
   await validationErrorsUtil(errors, res);
-  
+
   // Get email and password
   const {email, password} = req.body;
 
@@ -138,10 +130,7 @@ export const forgotPassword = async (req: Request, res: Response, next: NextFunc
     // Check if email exists
     const user = await authService.emailExists(email);
     if (!user) {
-      return res.status(400).json({
-        code: 400,
-        message: "L'email n'existe pas",
-      });
+      classicFailOrErrorResponse("L'email n'existe pas", 400, res);
     }
 
     // Generate passwordResetCode
