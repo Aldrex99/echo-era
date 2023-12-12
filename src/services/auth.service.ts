@@ -49,14 +49,10 @@ export const login = async (email: string, password: string) => {
 }
 
 export const logout = async (userId: string) => {
-  try {
-    await User.findOneAndUpdate({_id: userId}, {
-      lastLogout: new Date(),
-    });
-  } catch (err) {
-    if (err) {
-      throw new AppError("Une erreur est survenue lors de la déconnexion", 500);
-    }
+  const logoutUser = await User.findOneAndUpdate({_id: userId}, {lastLogout: new Date()});
+
+  if (!logoutUser) {
+    throw new AppError("Une erreur est survenue lors de la déconnexion", 500);
   }
 }
 
