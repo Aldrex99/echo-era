@@ -29,7 +29,7 @@ export const getAllUsers = async (req: IRequestUser, res: Response, next: NextFu
 export const searchUsers = async (req: IRequestUser, res: Response, next: NextFunction) => {
   const errors = validationResult(req);
   await validationErrorsUtil(errors, res);
-  
+
   try {
     const {query, limit, offset} = req.query;
     const fields: ISearchFields[] = [
@@ -58,6 +58,25 @@ export const searchUsers = async (req: IRequestUser, res: Response, next: NextFu
 }
 
 // Get user by id
+export const getUserById = async (req: IRequestUser, res: Response, next: NextFunction) => {
+  const errors = validationResult(req);
+  await validationErrorsUtil(errors, res);
+
+  try {
+    const {id} = req.params;
+
+    const user = await moderationService.getUserById(id);
+
+    const formattedUser = userForModeration(user);
+
+    return res.status(200).json({
+      message: "Utilisateur récupéré",
+      user: formattedUser,
+    });
+  } catch (err) {
+    next(err);
+  }
+}
 
 // Get other user profile
 
