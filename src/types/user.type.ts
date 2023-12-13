@@ -114,3 +114,24 @@ export interface IUserForUser {
   profile?: IProfile;
   role: 'user' | 'moderator' | 'admin';
 }
+
+export interface IUserForModeration {
+  id: string;
+  username?: string;
+  email?: string;
+  profile?: IProfile;
+  role: 'user' | 'moderator' | 'admin';
+  previousNames?: IPreviousName[];
+  previousEmails?: IPreviousEmail[];
+  usernameOnDelete?: string;
+  emailOnDelete?: string;
+  isActive?: boolean;
+  warnings?: IWarning[];
+  isMuted?: boolean;
+  muteDuration?: number;
+  muteExpiresAt?: Date;
+  isBanned?: boolean;
+  banDuration?: number;
+  banExpiresAt?: Date;
+  sanctionReason?: ISanctionReason[];
+}
