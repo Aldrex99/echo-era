@@ -110,3 +110,57 @@ export const unMuteUser = async (userId: string, moderatorId: string, reason: st
 
   return user.save();
 }
+
+export const banUser = async (userId: string, reason: string, durationInHours: number, bannerId: string) => {
+  const user = await getUserById(userId);
+
+  if (!user) {
+    throw new AppError("Utilisateur introuvable", 404);
+  }
+
+  // Check if user is already banned
+  if (user.isBanned) {
+    throw new AppError("Utilisateur déjà banni", 422);
+  }
+
+  // Create moderation log
+  await moderationLogUtil(bannerId, userId, "ban", reason);
+
+  // Ban user
+  user.isBanned = true;
+  user.banDuration = durationInHours;
+  user.banExpiresAt = new Date(Date.now() + durationInHours * 3600000);
+
+  const reasonAggrement = reason + ` Durée : ${durationInHours} heures`;
+
+  user.sanctionReason.push({
+    reason: reasonAggrement,
+    type: "ban",
+    date: new Date(),
+  });
+
+  return user.save();
+}
+
+export const unBanUser = async (userId: string, moderatorId: string, reason: string) => {
+  const user = await getUserById(userId);
+
+  if (!user) {
+    throw new AppError("Utilisateur introuvable", 404);
+  }
+
+  // Check if user is banned
+  if (!user.isBanned) {
+    throw new AppError("Utilisateur non banni", 422);
+  }
+
+  // Create moderation log
+  await moderationLogUtil(moderatorId, userId, "unban", reason);
+
+  // Unban user
+  user.isBanned = false;
+  user.banDuration = null;
+  user.banExpiresAt = null;
+
+  return user.save();
+}
