@@ -119,6 +119,39 @@ export const unWarnUser = async (req: IRequestUser, res: Response, next: NextFun
 }
 
 // Mute user
+export const muteUser = async (req: IRequestUser, res: Response, next: NextFunction) => {
+  const errors = validationResult(req);
+  await validationErrorsUtil(errors, res);
+
+  try {
+    const {id} = req.params;
+    const {reason, durationInMin} = req.body;
+
+    await moderationService.muteUser(id, reason, durationInMin, req.user.id);
+
+    return res.status(200).json({
+      message: "Utilisateur muté",
+    });
+  } catch (err) {
+    next(err);
+  }
+}
+
+// Unmute user
+export const unMuteUser = async (req: IRequestUser, res: Response, next: NextFunction) => {
+  try {
+    const {id} = req.params;
+    const {reason} = req.body;
+
+    await moderationService.unMuteUser(id, req.user.id, reason);
+
+    return res.status(200).json({
+      message: "Utilisateur démuté",
+    });
+  } catch (err) {
+    next(err);
+  }
+}
 
 // Ban user
 

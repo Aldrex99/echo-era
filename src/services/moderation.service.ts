@@ -1,5 +1,5 @@
 import User from "../models/User.model";
-import ModerationLog from "../models/ModerationLog.model";
+import { moderationLogUtil } from "../utils/moderationLog.util";
 import { AppError } from "../utils/error.util";
 
 export const getAllUsers = async () => {
@@ -24,19 +24,7 @@ export const warnUser = async (userId: string, reason: string, warnerId: string)
   }
 
   // Create moderation log
-  const newModerationLog = new ModerationLog({
-    moderator: warnerId,
-    affectedUser: userId,
-    action: "warn",
-    reason,
-  });
-
-  // Save moderation log
-  newModerationLog.save().then((moderationLog) => {
-    return moderationLog;
-  }).catch((error) => {
-    throw error;
-  });
+  await moderationLogUtil(warnerId, userId, "warn", reason);
 
   // Warn user
   user.warnings.push({
@@ -66,17 +54,59 @@ export const unWarnUser = async (userId: string, warnId: string, reason: string,
   await User.findOneAndUpdate({_id: userId}, {$pull: {warnings: {_id: warnId}}});
 
   // Create moderation log
-  const newModerationLog = new ModerationLog({
-    moderator: moderatorId,
-    affectedUser: userId,
-    action: "unwarn",
-    reason: reason ? reason : warn.reason,
+  await moderationLogUtil(moderatorId, userId, "unwarn", reason ? reason : warn.reason);
+}
+
+export const muteUser = async (userId: string, reason: string, durationInMin: number, muterId: string) => {
+  const user = await getUserById(userId);
+
+  if (!user) {
+    throw new AppError("Utilisateur introuvable", 404);
+  }
+
+  // Check if user is already muted
+  if (user.isMuted) {
+    throw new AppError("Utilisateur déjà muté", 422);
+  }
+
+  // Create moderation log
+  await moderationLogUtil(muterId, userId, "mute", reason);
+
+  // Mute user
+  user.isMuted = true;
+  user.muteDuration = durationInMin;
+  user.muteExpiresAt = new Date(Date.now() + durationInMin * 60000);
+
+  const reasonAggrement = reason + ` Durée : ${durationInMin} minutes`;
+
+  user.sanctionReason.push({
+    reason: reasonAggrement,
+    type: "mute",
+    date: new Date(),
   });
 
-  // Save moderation log
-  newModerationLog.save().then((moderationLog) => {
-    return moderationLog;
-  }).catch((error) => {
-    throw error;
-  });
+  return user.save();
+}
+
+export const unMuteUser = async (userId: string, moderatorId: string, reason: string) => {
+  const user = await getUserById(userId);
+
+  if (!user) {
+    throw new AppError("Utilisateur introuvable", 404);
+  }
+
+  // Check if user is muted
+  if (!user.isMuted) {
+    throw new AppError("Utilisateur non muté", 422);
+  }
+
+  // Create moderation log
+  await moderationLogUtil(moderatorId, userId, "unmute", reason);
+
+  // Unmute user
+  user.isMuted = false;
+  user.muteDuration = null;
+  user.muteExpiresAt = null;
+
+  return user.save();
 }
