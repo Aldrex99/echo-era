@@ -78,9 +78,24 @@ export const getUserById = async (req: IRequestUser, res: Response, next: NextFu
   }
 }
 
-// Get other user profile
-
 // Warn user
+export const warnUser = async (req: IRequestUser, res: Response, next: NextFunction) => {
+  const errors = validationResult(req);
+  await validationErrorsUtil(errors, res);
+
+  try {
+    const {id} = req.params;
+    const {reason} = req.body;
+
+    await moderationService.warnUser(id, reason, req.user.id);
+
+    return res.status(200).json({
+      message: "Utilisateur averti",
+    });
+  } catch (err) {
+    next(err);
+  }
+}
 
 // Mute user
 

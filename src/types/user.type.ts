@@ -37,7 +37,7 @@ interface IPreviousEmail {
 interface IWarning {
   reason: string;
   date?: Date;
-  type: string;
+  by?: string | ObjectId;
 }
 
 interface ISanctionReason {

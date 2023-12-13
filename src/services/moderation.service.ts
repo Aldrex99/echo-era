@@ -1,4 +1,5 @@
 import User from "../models/User.model";
+import ModerationLog from "../models/ModerationLog.model";
 import { AppError } from "../utils/error.util";
 
 export const getAllUsers = async () => {
@@ -13,4 +14,36 @@ export const getUserById = async (id: string) => {
   }
 
   return user;
+}
+
+export const warnUser = async (userId: string, reason: string, warnerId: string) => {
+  const user = await getUserById(userId);
+
+  if (!user) {
+    throw new AppError("Utilisateur introuvable", 404);
+  }
+
+  // Create moderation log
+  const newModerationLog = new ModerationLog({
+    moderator: warnerId,
+    affectedUser: userId,
+    action: "warn",
+    reason,
+  });
+
+  // Save moderation log
+  newModerationLog.save().then((moderationLog) => {
+    return moderationLog;
+  }).catch((error) => {
+    throw error;
+  });
+
+  // Warn user
+  user.warnings.push({
+    by: warnerId,
+    reason,
+    date: new Date(),
+  });
+
+  return user.save();
 }
