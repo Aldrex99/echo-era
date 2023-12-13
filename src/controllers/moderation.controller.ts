@@ -97,6 +97,27 @@ export const warnUser = async (req: IRequestUser, res: Response, next: NextFunct
   }
 }
 
+// unWarn user
+export const unWarnUser = async (req: IRequestUser, res: Response, next: NextFunction) => {
+  const errors = validationResult(req);
+  await validationErrorsUtil(errors, res);
+
+  try {
+    const {id, warnId} = req.params;
+
+    const {reason} = req.body;
+
+    await moderationService.unWarnUser(id, warnId, reason, req.user.id);
+
+    return res.status(200).json({
+      message: "Avertissement supprimé",
+    });
+  } catch (err) {
+    next(err);
+  }
+
+}
+
 // Mute user
 
 // Ban user
