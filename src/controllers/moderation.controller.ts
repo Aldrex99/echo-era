@@ -185,13 +185,59 @@ export const unBanUser = async (req: IRequestUser, res: Response, next: NextFunc
   }
 }
 
-// Get user warnings
+// Get all users are warnings
+export const getAllUsersAreWarnings = async (req: IRequestUser, res: Response, next: NextFunction) => {
+  try {
+    const users = await moderationService.getAllUsersAreWarnings();
 
-// Get user mutes
+    const formattedUsers = users.map((user) => {
+      return userForModeration(user);
+    });
 
-// Get user bans
+    return res.status(200).json({
+      message: "Utilisateurs récupérés",
+      users: formattedUsers,
+    });
+  } catch (err) {
+    next(err);
+  }
+}
 
-// Get user sanctions
+// Get all users are muted
+export const getAllUsersAreMuted = async (req: IRequestUser, res: Response, next: NextFunction) => {
+  try {
+    const users = await moderationService.getAllUsersAreMuted();
+
+    const formattedUsers = users.map((user) => {
+      return userForModeration(user);
+    });
+
+    return res.status(200).json({
+      message: "Utilisateurs récupérés",
+      users: formattedUsers,
+    });
+  } catch (err) {
+    next(err);
+  }
+}
+
+// Get all users are banned
+export const getAllUsersAreBanned = async (req: IRequestUser, res: Response, next: NextFunction) => {
+  try {
+    const users = await moderationService.getAllUsersAreBanned();
+
+    const formattedUsers = users.map((user) => {
+      return userForModeration(user);
+    });
+
+    return res.status(200).json({
+      message: "Utilisateurs récupérés",
+      users: formattedUsers,
+    });
+  } catch (err) {
+    next(err);
+  }
+}
 
 // Get reports
 

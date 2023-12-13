@@ -164,3 +164,15 @@ export const unBanUser = async (userId: string, moderatorId: string, reason: str
 
   return user.save();
 }
+
+export const getAllUsersAreWarnings = async () => {
+  return User.find({warnings: {$not: {$size: 0}}});
+}
+
+export const getAllUsersAreMuted = async () => {
+  return User.find({isMuted: true});
+}
+
+export const getAllUsersAreBanned = async () => {
+  return User.find({isBanned: true});
+}
