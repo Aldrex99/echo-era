@@ -204,8 +204,7 @@ export const reportMessage = async (reporterId: string, messageId: string, reaso
   // Report message
   message.flaggedBy.push(new ObjectId(reporterId));
 
-  // Check if message is flagged
-  if (message.flaggedBy.length >= 5) {
+  if (message.moderationStatus === 'none') {
     message.moderationStatus = 'flagged';
   }
 

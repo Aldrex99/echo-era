@@ -41,3 +41,34 @@ export interface ISearchReportResult {
   status: string;
   date: Date;
 }
+
+interface IEditHistory {
+  date: Date;
+  role: string;
+  by: {
+    _id: string;
+    username: string;
+  };
+  content: string;
+}
+
+export interface IReportedMessage {
+  _id: string;
+  date: Date;
+  deleted: boolean;
+  sender: {
+    _id: string;
+    username: string;
+  }
+  chat: string;
+  editHistory: IEditHistory[];
+  readBy: {
+    _id: string;
+    username: string;
+  }[];
+  moderationStatus: string;
+  moderationDate: Date;
+  flaggedBy: string[];
+  content: string;
+  deletedBy: string[];
+}

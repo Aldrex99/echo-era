@@ -2,7 +2,9 @@ import User from "../models/User.model";
 import Report from "../models/Report.model";
 import { moderationLogUtil } from "../utils/moderationLog.util";
 import { AppError } from "../utils/error.util";
-import { ISearchFields, ISearchReportResult } from "../types/global.type";
+import { IReportedMessage, ISearchFields, ISearchReportResult } from "../types/global.type";
+import Message from "../models/Message.model";
+import { ObjectId } from "mongodb";
 
 export const getAllUsers = async () => {
   return User.find();
@@ -195,68 +197,53 @@ export const getReportsByMultipleFields = async (fields: ISearchFields[], query:
   const filteredReports = reports.filter((report) => {
     let isReport = false;
 
-    console.log(report)
-
     for (let i = 0; i < fields.length; i++) {
       const field = fields[i];
 
       switch (field.field) {
         case "reason":
-          console.log("reason", report?.reason?.toLowerCase().includes(query?.toLowerCase()));
           isReport = report?.reason?.toLowerCase().includes(query?.toLowerCase()) || isReport;
           break;
         case "fromUsername":
-          console.log("fromUsername", report?.fromUser?.username?.toLowerCase().includes(query?.toLowerCase()));
           isReport = report?.fromUser?.username?.toLowerCase().includes(query?.toLowerCase()) || isReport;
           break;
         case "toUsername":
-          console.log("toUsername", report?.toUser?.username?.toLowerCase().includes(query?.toLowerCase()));
           isReport = report?.toUser?.username?.toLowerCase().includes(query?.toLowerCase()) || isReport;
           break;
         case "fromEmail":
-          console.log("fromEmail", report?.fromUser?.email?.toLowerCase().includes(query?.toLowerCase()));
           isReport = report?.fromUser?.email?.toLowerCase().includes(query?.toLowerCase()) || isReport;
           break;
         case "toEmail":
-          console.log("toEmail", report?.toUser?.email?.toLowerCase().includes(query?.toLowerCase()));
           isReport = report?.toUser?.email?.toLowerCase().includes(query?.toLowerCase()) || isReport;
           break;
         case "fromUsernameOnDelete":
-          console.log("fromUsernameOnDelete", report?.fromUser?.usernameOnDelete?.toLowerCase().includes(query?.toLowerCase()));
           isReport = report?.fromUser?.usernameOnDelete?.toLowerCase().includes(query?.toLowerCase()) || isReport;
           break;
         case "toUsernameOnDelete":
-          console.log("toUsernameOnDelete", report?.toUser?.usernameOnDelete?.toLowerCase().includes(query?.toLowerCase()));
           isReport = report?.toUser?.usernameOnDelete?.toLowerCase().includes(query?.toLowerCase()) || isReport;
           break;
         case "fromEmailOnDelete":
-          console.log("fromEmailOnDelete", report?.fromUser?.emailOnDelete?.toLowerCase().includes(query?.toLowerCase()));
           isReport = report?.fromUser?.emailOnDelete?.toLowerCase().includes(query?.toLowerCase()) || isReport;
           break;
         case "toEmailOnDelete":
-          console.log("toEmailOnDelete", report?.toUser?.emailOnDelete?.toLowerCase().includes(query?.toLowerCase()));
           isReport = report?.toUser?.emailOnDelete?.toLowerCase().includes(query?.toLowerCase()) || isReport;
           break;
         case "fromUsernameInPreviousUsername":
-          console.log("fromUsernameInPreviousUsername", report?.fromUser?.previousNames?.map(pn => pn.username)?.includes(query?.toLowerCase()));
           const previousNames = report?.fromUser?.previousNames?.map(pn => pn.username);
 
           isReport = previousNames?.includes(query?.toLowerCase()) || isReport;
           break;
         case "toUsernameInPreviousUsername":
-          console.log("toUsernameInPreviousUsername", report?.toUser?.previousNames?.map(pn => pn.username)?.includes(query?.toLowerCase()));
           const previousNames2 = report?.toUser?.previousNames?.map(pn => pn.username);
 
           isReport = previousNames2?.includes(query?.toLowerCase()) || isReport;
           break;
         case "fromEmailInPreviousEmail":
-          console.log("fromEmailInPreviousEmail", report?.fromUser?.previousEmail?.map(pe => pe.email)?.includes(query?.toLowerCase()));
           const previousEmails = report?.fromUser?.previousEmail?.map(pe => pe.email);
 
           isReport = previousEmails?.includes(query?.toLowerCase()) || isReport;
           break;
         case "toEmailInPreviousEmail":
-          console.log("toEmailInPreviousEmail", report?.toUser?.previousEmail?.map(pe => pe.email)?.includes(query?.toLowerCase()));
           const previousEmails2 = report?.toUser?.previousEmail?.map(pe => pe.email);
 
           isReport = previousEmails2?.includes(query?.toLowerCase()) || isReport;
@@ -301,4 +288,87 @@ export const changeReportStatus = async (id: string, status: "pending" | "resolv
   await moderationLogUtil(moderatorId, report.toUser._id.toString(), 'status', `Signalement ${status}, reportId: ${id}`);
 
   return report.save();
+}
+
+export const getReportedMessages = async () => {
+  return Message.find({moderationStatus: "flagged"}).populate("sender", "username").populate("readBy", "username").populate("editHistory.by", "username");
+}
+
+export const getReportedMessagesByMultipleFields = async (fields: ISearchFields[], query: string, offset: number, limit: number) => {
+  if (offset < 1 || limit < 1) {
+    throw new AppError("Les paramètres limit et offset doivent être supérieurs à 0", 422);
+  }
+
+  // Get reported messages
+  const messages: IReportedMessage[] = await Message.find({moderationStatus: "flagged"}).populate("sender", "username").populate("readBy", "username").populate("editHistory.by", "username");
+
+  // Filter messages
+  const filteredMessages = messages.filter((message) => {
+    let isMessage = false;
+
+    for (let i = 0; i < fields.length; i++) {
+      const field = fields[i];
+
+      switch (field.field) {
+        case "content":
+          isMessage = message.content.toLowerCase().includes(query.toLowerCase()) || isMessage;
+          break;
+        case "senderUsername":
+          isMessage = message.sender.username.toLowerCase().includes(query.toLowerCase()) || isMessage;
+          break;
+        case "readByUsername":
+          const readByUsernames = message.readBy.map((user) => user.username);
+
+          isMessage = readByUsernames.includes(query.toLowerCase()) || isMessage;
+          break;
+        case "editByUsername":
+          const editByUsernames = message.editHistory.map((edit) => edit.by.username);
+
+          isMessage = editByUsernames.includes(query.toLowerCase()) || isMessage;
+          break;
+        default:
+          break;
+      }
+    }
+    return isMessage;
+  });
+
+  // Sort messages by date
+  const sortedMessages = filteredMessages.sort((a, b) => {
+    return b.date.getTime() - a.date.getTime();
+  });
+
+  // Paginate messages
+  return sortedMessages.slice(offset - 1, offset - 1 + limit);
+}
+
+export const deleteReportedMessage = async (messageId: string, moderatorId: string, reason: string) => {
+  // Retrieve Message
+  const message = await Message.findOne({_id: messageId});
+
+  // Check if message exists
+  if (!message) {
+    throw new AppError("Message introuvable", 404);
+  }
+
+  // Check if message is already deleted
+  if (message.deleted) {
+    throw new AppError("Message déjà supprimé", 422);
+  }
+
+  // Check if message is flagged
+  if (message.moderationStatus !== "flagged") {
+    throw new AppError("Message non signalé", 422);
+  }
+
+  // Delete message
+  message.deleted = true;
+  message.deletedBy.push(new ObjectId(moderatorId));
+  message.moderationDate = new Date();
+  message.moderationStatus = "unapproved";
+
+  await message.save();
+
+  // Create moderation log
+  await moderationLogUtil(moderatorId, message.sender.toString(), "delete", reason, messageId);
 }

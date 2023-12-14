@@ -318,8 +318,54 @@ export const changeReportStatus = async (req: IRequestUser, res: Response, next:
   }
 }
 
-// Get reported message
+// Get reported messages
+export const getReportedMessages = async (req: IRequestUser, res: Response, next: NextFunction) => {
+  try {
+    const message = await moderationService.getReportedMessages();
+
+    return res.status(200).json({
+      message: "Message récupéré",
+      reportedMessage: message,
+    });
+  } catch (err) {
+    next(err);
+  }
+}
 
 // Search reported messages
+export const searchReportedMessages = async (req: IRequestUser, res: Response, next: NextFunction) => {
+  try {
+    const {query, limit, offset} = req.query;
+    const fields: ISearchFields[] = [
+      {field: 'content'},
+      {field: 'senderUsername'},
+      {field: 'readByUsername'},
+      {field: 'editByUsername'},
+    ];
+
+    const messages = await moderationService.getReportedMessagesByMultipleFields(fields, query as string, parseInt(offset as string), parseInt(limit as string));
+
+    return res.status(200).json({
+      message: "Messages récupérés",
+      reportedMessages: messages,
+    });
+  } catch (err) {
+    next(err);
+  }
+}
 
 // Delete reported message
+export const deleteReportedMessage = async (req: IRequestUser, res: Response, next: NextFunction) => {
+  try {
+    const {id} = req.params;
+    const {reason} = req.body;
+
+    await moderationService.deleteReportedMessage(id, req.user.id, reason);
+
+    return res.status(200).json({
+      message: "Message supprimé",
+    });
+  } catch (err) {
+    next(err);
+  }
+}
