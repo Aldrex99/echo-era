@@ -287,8 +287,36 @@ export const searchReports = async (req: IRequestUser, res: Response, next: Next
 }
 
 // Get report by id
+export const getReportById = async (req: IRequestUser, res: Response, next: NextFunction) => {
+  try {
+    const {id} = req.params;
+
+    const report = await moderationService.getReportById(id);
+
+    return res.status(200).json({
+      message: "Signalement récupéré",
+      report: report,
+    });
+  } catch (err) {
+    next(err);
+  }
+}
 
 // Change report status
+export const changeReportStatus = async (req: IRequestUser, res: Response, next: NextFunction) => {
+  try {
+    const {id} = req.params;
+    const {status} = req.body;
+
+    await moderationService.changeReportStatus(id, status, req.user.id);
+
+    return res.status(200).json({
+      message: "Statut du signalement modifié",
+    });
+  } catch (err) {
+    next(err);
+  }
+}
 
 // Get reported message
 

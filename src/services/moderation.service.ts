@@ -276,3 +276,29 @@ export const getReportsByMultipleFields = async (fields: ISearchFields[], query:
   // Paginate reports
   return sortedReports.slice(offset - 1, offset - 1 + limit);
 }
+
+export const getReportById = async (id: string) => {
+  const report = await Report.findById(id).populate("fromUser", "username email").populate("toUser", "username email").populate("messageId", "content");
+
+  if (!report) {
+    throw new AppError("Signalement introuvable", 404);
+  }
+
+  return report;
+}
+
+export const changeReportStatus = async (id: string, status: "pending" | "resolved" | "rejected", moderatorId: string) => {
+  const report = await getReportById(id);
+
+  if (!report) {
+    throw new AppError("Signalement introuvable", 404);
+  }
+
+  // Change report status
+  report.status = status;
+
+  // Create moderation log
+  await moderationLogUtil(moderatorId, report.toUser._id.toString(), 'status', `Signalement ${status}, reportId: ${id}`);
+
+  return report.save();
+}
