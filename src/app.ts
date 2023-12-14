@@ -11,6 +11,7 @@ import userRoute from "./routes/user.route";
 import socialRoute from "./routes/social.route";
 import chatRoute from "./routes/chat.route";
 import messageRoute from "./routes/message.route";
+import moderationRoute from "./routes/moderation.route";
 
 /* Creating the application */
 const app: Application = express();
@@ -29,7 +30,7 @@ app.use("/api/chat", checkAccessToken, checkUserRole(['user', 'moderator', 'admi
 
 app.use("/api/message", checkAccessToken, checkUserRole(['user', 'moderator', 'admin']), messageRoute);
 
-app.use("/api/message", checkAccessToken, messageRoute);
+app.use("/api/moderation", checkAccessToken, checkUserRole(['moderator', 'admin']), moderationRoute);
 
 /* Handling errors */
 app.use(errorHandler);
