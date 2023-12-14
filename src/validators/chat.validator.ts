@@ -23,8 +23,8 @@ export const getUserChats = [
   .withMessage("Le nombre de chats à récupérer est invalide"),
   query("offset")
   .optional()
-  .isInt({min: 1})
-  .withMessage("L'offset est invalide"),
+  .isInt({min: 0})
+  .withMessage("Le nombre de page est invalide"),
 ];
 
 export const getChatInfo = [

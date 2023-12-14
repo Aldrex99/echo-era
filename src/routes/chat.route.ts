@@ -8,7 +8,7 @@ const router: Router = Router();
 // POST api/chat - Create a chat
 router.post("/", chatValidator.createChat, chatController.createChat);
 
-// GET api/chat/user - Get chats of the user
+// GET api/chat/user?limit=1&offset=0 - Get chats of the user
 router.get("/user", chatValidator.getUserChats, chatController.getUserChats);
 
 // GET api/chat/get/:id - Get chat info

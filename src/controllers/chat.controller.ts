@@ -76,7 +76,8 @@ export const getUserChats = async (req: IRequestUser, res: Response, next: NextF
 
     return res.status(200).json({
       message: "Chats récupérés",
-      chats,
+      chats: chats.chats,
+      total: chats.total,
     });
   } catch (err) {
     if (err) {

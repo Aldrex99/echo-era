@@ -9,12 +9,13 @@ import { AppError } from "../utils/error.util";
 const unreadAndLastMessage = async (chats: IChatDocumentMongo[], userId: string) => {
   return await Promise.all(
     chats.map(async (chat) => {
-      const messages = await Message.find({chat: chat._id, readBy: {$ne: userId}});
-      const lastMessage = await Message.findOne({chat: chat._id}).sort({createdAt: -1});
+      const notReadMessages = await Message.countDocuments({chat: chat._id, readBy: {$ne: userId}});
+      const lastMessage = await Message.findOne({chat: chat._id}).sort({date: -1});
       return {
         chat,
-        unreadMessages: messages.length,
+        unreadMessages: notReadMessages,
         lastMessage: lastMessage ? lastMessage.content : null,
+        lastMessageDate: lastMessage ? lastMessage.date : null,
       };
     })
   );
@@ -61,15 +62,36 @@ export const createPrivateChat = async (participantsId: string[]) => {
 }
 
 export const getUserChats = async (userId: string, limit: number, offset: number) => {
-  if (offset < 1 || limit < 1) {
-    throw new AppError("Les paramètres limit et offset doivent être supérieurs à 0", 422);
-  }
+  const queryCondition = {$or: [{type: "public"}, {'participants.user': userId}]};
 
   // Get chats of the user and public chats
-  const chats = await Chat.find({$or: [{type: "public"}, {'participants.user': userId}]}).skip(offset - 1).limit(limit);
+  const chats = await Chat.find(queryCondition, {
+    __v: 0,
+    createdAt: 0,
+    messages: 0,
+    'participants._id': 0,
+    'participants.date': 0,
+    'participants.role': 0
+  }).skip(offset * limit).limit(limit).populate("participants.user", "username");
+
+  // If chat is private remove user from participants
+  chats.forEach((chat) => {
+    if (chat.type === "private") {
+      // Trouver l'index du participant à retirer
+      const index = chat.participants.findIndex(p => p.user._id.toString() === userId.toString());
+
+      // Si le participant est trouvé, retirez-le du tableau
+      if (index !== -1) {
+        chat.participants.splice(index, 1);
+      }
+    }
+  });
 
   // Get unread messages and last message for each chat and return the results
-  return await unreadAndLastMessage(chats, userId);
+  return {
+    chats: await unreadAndLastMessage(chats, userId),
+    total: await Chat.countDocuments(queryCondition)
+  };
 }
 
 export const getChatInfo = async (chatId: string): Promise<IGetChat> => {
