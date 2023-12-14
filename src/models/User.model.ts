@@ -25,7 +25,7 @@ const userSchema = new Schema({
   warnings: [{
     reason: {type: String, required: true},
     date: {type: Date, default: Date.now},
-    type: {type: String, required: true},
+    by: {type: Schema.Types.ObjectId, ref: 'User'},
   }],
   isMuted: {type: Boolean, default: false},
   muteDuration: {type: Number, default: 0},

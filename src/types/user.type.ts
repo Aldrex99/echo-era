@@ -37,7 +37,7 @@ interface IPreviousEmail {
 interface IWarning {
   reason: string;
   date?: Date;
-  type: string;
+  by?: string | ObjectId;
 }
 
 interface ISanctionReason {
@@ -113,4 +113,25 @@ export interface IUserForUser {
   username?: string;
   profile?: IProfile;
   role: 'user' | 'moderator' | 'admin';
+}
+
+export interface IUserForModeration {
+  id: string;
+  username?: string;
+  email?: string;
+  profile?: IProfile;
+  role: 'user' | 'moderator' | 'admin';
+  previousNames?: IPreviousName[];
+  previousEmails?: IPreviousEmail[];
+  usernameOnDelete?: string;
+  emailOnDelete?: string;
+  isActive?: boolean;
+  warnings?: IWarning[];
+  isMuted?: boolean;
+  muteDuration?: number;
+  muteExpiresAt?: Date;
+  isBanned?: boolean;
+  banDuration?: number;
+  banExpiresAt?: Date;
+  sanctionReason?: ISanctionReason[];
 }
