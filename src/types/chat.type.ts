@@ -1,4 +1,5 @@
 import { Types } from 'mongoose';
+import { ObjectId } from "mongodb";
 
 interface IChatParticipant {
   user: string;
@@ -33,6 +34,21 @@ export interface IChatDocumentMongo {
   description?: string;
 }
 
+export interface IRawChatInfo {
+  _id: ObjectId;
+  name: string;
+  description: string;
+  type: "public" | "private" | "group";
+  participants: {
+    user: {
+      _id: ObjectId;
+      username: string;
+    };
+    role: "user" | "moderator" | "admin";
+  }[];
+  createdAt: Date;
+}
+
 export interface IGetChat {
   id: Types.ObjectId;
   name: string;
@@ -42,7 +58,6 @@ export interface IGetChat {
     id: Types.ObjectId;
     username: string;
     role: "user" | "moderator" | "admin";
-    date: Date;
   }[];
   createdAt: Date;
 }

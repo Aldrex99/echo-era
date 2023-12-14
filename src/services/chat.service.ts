@@ -1,7 +1,7 @@
 import Chat from "../models/Chat.model";
 import User from "../models/User.model";
 import Message from "../models/Message.model";
-import { IChatCreation, IChatDocumentMongo, IChatUpdate, IGetChat } from "../types/chat.type";
+import { IChatCreation, IChatDocumentMongo, IChatUpdate, IGetChat, IRawChatInfo } from "../types/chat.type";
 import ChatRequest from "../models/ChatRequest.model";
 import { AppError } from "../utils/error.util";
 
@@ -95,22 +95,15 @@ export const getUserChats = async (userId: string, limit: number, offset: number
 }
 
 export const getChatInfo = async (chatId: string): Promise<IGetChat> => {
-  const chatInfo = await Chat.findById(chatId, {
-    name: 1,
-    description: 1,
-    type: 1,
-    participants: 1,
-    createdAt: 1
-  });
+  const chatInfo: IRawChatInfo = await Chat.findById(chatId, {
+    'participants.date': 0,
+    messages: 0,
+    __v: 0,
+  }).populate("participants.user", "username");
 
   if (!chatInfo) {
     throw new AppError("Le chat n'existe pas", 404);
   }
-
-  // Retrieve usernames of the participants and wait for the results
-  const participants = await Promise.all(
-    chatInfo.participants.map(participant => User.findOne({_id: participant.user}, {username: 1}))
-  );
 
   // Format the chat info
   return {
@@ -118,12 +111,11 @@ export const getChatInfo = async (chatId: string): Promise<IGetChat> => {
     name: chatInfo.name,
     description: chatInfo.description,
     type: chatInfo.type,
-    participants: chatInfo.participants.map((participant, index) => {
+    participants: chatInfo.participants.map((participant) => {
       return {
-        id: participant.user,
-        username: participants[index] ? participants[index].username : null,
+        id: participant.user._id,
+        username: participant.user.username,
         role: participant.role,
-        date: participant.date,
       }
     }),
     createdAt: chatInfo.createdAt,
