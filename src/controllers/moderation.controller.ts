@@ -103,9 +103,9 @@ export const unWarnUser = async (req: IRequestUser, res: Response, next: NextFun
   await validationErrorsUtil(errors, res);
 
   try {
-    const {id, warnId} = req.params;
+    const {id} = req.params;
 
-    const {reason} = req.body;
+    const {warnId, reason} = req.body;
 
     await moderationService.unWarnUser(id, warnId, reason, req.user.id);
 
@@ -239,9 +239,52 @@ export const getAllUsersAreBanned = async (req: IRequestUser, res: Response, nex
   }
 }
 
-// Get reports
+// Get reports by status
+export const getReports = async (req: IRequestUser, res: Response, next: NextFunction) => {
+  try {
+    const {status} = req.query;
 
-// Search reports
+    const reports = await moderationService.getReports(status as string);
+
+    return res.status(200).json({
+      message: "Signalements récupérés",
+      reports: reports,
+    });
+  } catch (err) {
+    next(err);
+  }
+}
+
+// Search reports by reason, from username, to username, from email, to email, from usernameOnDelete, to usernameOnDelete, from emailOnDelete, to emailOnDelete
+export const searchReports = async (req: IRequestUser, res: Response, next: NextFunction) => {
+  try {
+    const {query, limit, offset} = req.query;
+    const fields: ISearchFields[] = [
+      {field: 'reason'},
+      {field: 'fromUsername'},
+      {field: 'toUsername'},
+      {field: 'fromEmail'},
+      {field: 'toEmail'},
+      {field: 'fromUsernameOnDelete'},
+      {field: 'toUsernameOnDelete'},
+      {field: 'fromEmailOnDelete'},
+      {field: 'toEmailOnDelete'},
+      {field: 'fromUsernameInPreviousUsername'},
+      {field: 'toUsernameInPreviousUsername'},
+      {field: 'fromEmailInPreviousEmail'},
+      {field: 'toEmailInPreviousEmail'},
+    ];
+
+    const reports = await moderationService.getReportsByMultipleFields(fields, query as string, parseInt(offset as string), parseInt(limit as string));
+
+    return res.status(200).json({
+      message: "Signalements récupérés",
+      reports: reports
+    });
+  } catch (err) {
+    next(err);
+  }
+}
 
 // Get report by id
 

@@ -1,6 +1,8 @@
 import User from "../models/User.model";
+import Report from "../models/Report.model";
 import { moderationLogUtil } from "../utils/moderationLog.util";
 import { AppError } from "../utils/error.util";
+import { ISearchFields, ISearchReportResult } from "../types/global.type";
 
 export const getAllUsers = async () => {
   return User.find();
@@ -175,4 +177,102 @@ export const getAllUsersAreMuted = async () => {
 
 export const getAllUsersAreBanned = async () => {
   return User.find({isBanned: true});
+}
+
+export const getReports = async (status: string) => {
+  return Report.find({status});
+}
+
+export const getReportsByMultipleFields = async (fields: ISearchFields[], query: string, offset: number, limit: number) => {
+  if (offset < 1 || limit < 1) {
+    throw new AppError("Les paramètres limit et offset doivent être supérieurs à 0", 422);
+  }
+
+  // Get reports by reason, from username, to username, from email, to email, from usernameOnDelete, to usernameOnDelete, from emailOnDelete, to emailOnDelete, from username in PreviousUsername, to username in PreviousUsername, from email in PreviousEmail, to email in PreviousEmail
+  const reports: ISearchReportResult[] = await Report.find().populate("fromUser", "username email usernameOnDelete emailOnDelete previousNames previousEmail").populate("toUser", "username email usernameOnDelete emailOnDelete previousNames previousEmail");
+
+  // Filter reports
+  const filteredReports = reports.filter((report) => {
+    let isReport = false;
+
+    console.log(report)
+
+    for (let i = 0; i < fields.length; i++) {
+      const field = fields[i];
+
+      switch (field.field) {
+        case "reason":
+          console.log("reason", report?.reason?.toLowerCase().includes(query?.toLowerCase()));
+          isReport = report?.reason?.toLowerCase().includes(query?.toLowerCase()) || isReport;
+          break;
+        case "fromUsername":
+          console.log("fromUsername", report?.fromUser?.username?.toLowerCase().includes(query?.toLowerCase()));
+          isReport = report?.fromUser?.username?.toLowerCase().includes(query?.toLowerCase()) || isReport;
+          break;
+        case "toUsername":
+          console.log("toUsername", report?.toUser?.username?.toLowerCase().includes(query?.toLowerCase()));
+          isReport = report?.toUser?.username?.toLowerCase().includes(query?.toLowerCase()) || isReport;
+          break;
+        case "fromEmail":
+          console.log("fromEmail", report?.fromUser?.email?.toLowerCase().includes(query?.toLowerCase()));
+          isReport = report?.fromUser?.email?.toLowerCase().includes(query?.toLowerCase()) || isReport;
+          break;
+        case "toEmail":
+          console.log("toEmail", report?.toUser?.email?.toLowerCase().includes(query?.toLowerCase()));
+          isReport = report?.toUser?.email?.toLowerCase().includes(query?.toLowerCase()) || isReport;
+          break;
+        case "fromUsernameOnDelete":
+          console.log("fromUsernameOnDelete", report?.fromUser?.usernameOnDelete?.toLowerCase().includes(query?.toLowerCase()));
+          isReport = report?.fromUser?.usernameOnDelete?.toLowerCase().includes(query?.toLowerCase()) || isReport;
+          break;
+        case "toUsernameOnDelete":
+          console.log("toUsernameOnDelete", report?.toUser?.usernameOnDelete?.toLowerCase().includes(query?.toLowerCase()));
+          isReport = report?.toUser?.usernameOnDelete?.toLowerCase().includes(query?.toLowerCase()) || isReport;
+          break;
+        case "fromEmailOnDelete":
+          console.log("fromEmailOnDelete", report?.fromUser?.emailOnDelete?.toLowerCase().includes(query?.toLowerCase()));
+          isReport = report?.fromUser?.emailOnDelete?.toLowerCase().includes(query?.toLowerCase()) || isReport;
+          break;
+        case "toEmailOnDelete":
+          console.log("toEmailOnDelete", report?.toUser?.emailOnDelete?.toLowerCase().includes(query?.toLowerCase()));
+          isReport = report?.toUser?.emailOnDelete?.toLowerCase().includes(query?.toLowerCase()) || isReport;
+          break;
+        case "fromUsernameInPreviousUsername":
+          console.log("fromUsernameInPreviousUsername", report?.fromUser?.previousNames?.map(pn => pn.username)?.includes(query?.toLowerCase()));
+          const previousNames = report?.fromUser?.previousNames?.map(pn => pn.username);
+
+          isReport = previousNames?.includes(query?.toLowerCase()) || isReport;
+          break;
+        case "toUsernameInPreviousUsername":
+          console.log("toUsernameInPreviousUsername", report?.toUser?.previousNames?.map(pn => pn.username)?.includes(query?.toLowerCase()));
+          const previousNames2 = report?.toUser?.previousNames?.map(pn => pn.username);
+
+          isReport = previousNames2?.includes(query?.toLowerCase()) || isReport;
+          break;
+        case "fromEmailInPreviousEmail":
+          console.log("fromEmailInPreviousEmail", report?.fromUser?.previousEmail?.map(pe => pe.email)?.includes(query?.toLowerCase()));
+          const previousEmails = report?.fromUser?.previousEmail?.map(pe => pe.email);
+
+          isReport = previousEmails?.includes(query?.toLowerCase()) || isReport;
+          break;
+        case "toEmailInPreviousEmail":
+          console.log("toEmailInPreviousEmail", report?.toUser?.previousEmail?.map(pe => pe.email)?.includes(query?.toLowerCase()));
+          const previousEmails2 = report?.toUser?.previousEmail?.map(pe => pe.email);
+
+          isReport = previousEmails2?.includes(query?.toLowerCase()) || isReport;
+          break;
+        default:
+          break;
+      }
+    }
+    return isReport;
+  });
+
+  // Sort reports by date
+  const sortedReports = filteredReports.sort((a, b) => {
+    return b.date.getTime() - a.date.getTime();
+  });
+
+  // Paginate reports
+  return sortedReports.slice(offset - 1, offset - 1 + limit);
 }
