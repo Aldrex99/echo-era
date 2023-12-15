@@ -249,7 +249,7 @@ export const updateChatParticipantRole = async (chatId: string, userId: string, 
   await Chat.findOneAndUpdate({_id: chatId, "participants.user": userId}, {"participants.$.role": role});
 }
 
-export const removeUserFromChat = async (chatId: string, userId: string) => {
+export const removeUserFromChat = async (chatId: string, userId: string, removerId: string) => {
   // Retrieve chat
   const chat = await Chat.findById(chatId);
 
@@ -262,6 +262,18 @@ export const removeUserFromChat = async (chatId: string, userId: string) => {
   const participant = chat.participants.find(participant => participant.user.toString() === userId);
   if (!participant) {
     throw new AppError("L'utilisateur ne fait pas partie du chat", 403);
+  }
+
+  // Check if the user is admin
+  if (participant.role === "admin") {
+    throw new AppError("Vous ne pouvez pas supprimer un administrateur", 403);
+  }
+
+  // Check if remover is admin for remove moderator
+  const remover = chat.participants.find(participant => participant.user.toString() === removerId);
+
+  if (participant.role === "moderator" && remover.role !== "admin") {
+    throw new AppError("Votre rôle ne vous permet pas de supprimer un modérateur", 403);
   }
 
   // Remove user from chat
@@ -281,6 +293,21 @@ export const leaveChat = async (chatId: string, userId: string) => {
   const participant = chat.participants.find(participant => participant.user.toString() === userId);
   if (!participant) {
     throw new AppError("Vous n'êtes pas dans ce chat", 403);
+  }
+
+  // Check if the user is the last admin and set the old user with role moderator to role admin
+  if (participant.role === "admin" && chat.participants.filter(participant => participant.role === "admin").length === 1) {
+    const oldModerator = chat.participants.sort((a, b) => a.date.getTime() - b.date.getTime()).find(participant => participant.role === "moderator");
+    if (oldModerator) {
+      await updateChatParticipantRole(chatId, oldModerator.user.toString(), "admin");
+    } else {
+      const oldUser = chat.participants.sort((a, b) => a.date.getTime() - b.date.getTime()).find(participant => participant.role === "user");
+      if (oldUser) {
+        await updateChatParticipantRole(chatId, oldUser.user.toString(), "admin");
+      } else {
+        throw new AppError("Impossible de quitter le chat", 500);
+      }
+    }
   }
 
   // Remove user from chat

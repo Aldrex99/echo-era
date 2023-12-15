@@ -266,20 +266,14 @@ export const removeUserFromChat = async (req: IRequestUser, res: Response, next:
   await validationErrorsUtil(errors, res);
 
   try {
-    const {id} = req.params;
+    const {chatId, userId} = req.params;
 
     // Check if user is admin or moderator of the chat
-    const chat = await chatService.getChatInfo(id);
+    const chat = await chatService.getChatInfo(chatId);
     await participantRoleVerify(["admin", "moderator"], chat, req.user.id, res);
 
-    // Check if user is in the chat
-    const participantToRemove = chat.participants.find(participant => participant.id.toString() === req.body.userId);
-    if (participantToRemove === undefined) {
-      classicFailOrErrorResponse("L'utilisateur n'est pas dans le chat", 422, res);
-    }
-
     // Remove user from chat
-    await chatService.removeUserFromChat(id, req.body.userId);
+    await chatService.removeUserFromChat(chatId, userId, req.user.id);
 
     return res.status(200).json({
       message: "Utilisateur supprimé du chat",
@@ -297,10 +291,10 @@ export const leaveChat = async (req: IRequestUser, res: Response, next: NextFunc
   await validationErrorsUtil(errors, res);
 
   try {
-    const {id} = req.params;
+    const {chatId} = req.params;
 
     // Leave chat
-    await chatService.leaveChat(id, req.user.id);
+    await chatService.leaveChat(chatId, req.user.id);
 
     return res.status(200).json({
       message: "Vous avez quitté le chat",

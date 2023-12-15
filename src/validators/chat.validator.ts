@@ -65,12 +65,12 @@ export const updateChatParticipantRole = [
 ];
 
 export const removeUserFromChat = [
-  param("id").isMongoId().withMessage("L'id du chat est invalide"),
-  body("userId").isMongoId().withMessage("L'id de l'utilisateur est invalide"),
+  param("chatId").isMongoId().withMessage("L'id du chat est invalide"),
+  param("userId").isMongoId().withMessage("L'id de l'utilisateur est invalide"),
 ];
 
 export const leaveChat = [
-  param("id").isMongoId().withMessage("L'id du chat est invalide"),
+  param("chatId").isMongoId().withMessage("L'id du chat est invalide"),
 ];
 
 export const deleteChat = [

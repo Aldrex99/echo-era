@@ -32,11 +32,11 @@ router.put("/:chatId", chatValidator.updateChatInfo, chatController.updateChatIn
 // POST api/chat/update-participant-role/:chatId/:userId - Update participant role
 router.post("/update-participant-role/:chatId/:userId", chatValidator.updateChatParticipantRole, chatController.updateChatParticipantRole);
 
-// POST api/chat/remove-participant/:id - Remove participant
-router.post("/remove-participant/:id", chatValidator.removeUserFromChat, chatController.removeUserFromChat);
+// POST api/chat/remove-participant/:chatId/:userId - Remove participant
+router.post("/remove-participant/:chatId/:userId", chatValidator.removeUserFromChat, chatController.removeUserFromChat);
 
-// POST api/chat/leave-chat/:id - Leave chat
-router.post("/leave-chat/:id", chatValidator.leaveChat, chatController.leaveChat);
+// POST api/chat/leave-chat/:chatId - Leave chat
+router.post("/leave-chat/:chatId", chatValidator.leaveChat, chatController.leaveChat);
 
 // DELETE api/chat/:id - Delete chat
 router.delete("/:id", chatValidator.deleteChat, chatController.deleteChat);
