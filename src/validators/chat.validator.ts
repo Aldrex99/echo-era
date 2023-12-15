@@ -45,7 +45,7 @@ export const declineChatRequest = [
 ];
 
 export const updateChatInfo = [
-  param("id").isMongoId().withMessage("L'id du chat est invalide"),
+  param("chatId").isMongoId().withMessage("L'id du chat est invalide"),
   body("name")
   .optional()
   .isLength({min: 1})
@@ -57,11 +57,11 @@ export const updateChatInfo = [
 ];
 
 export const updateChatParticipantRole = [
-  param("id").isMongoId().withMessage("L'id du chat est invalide"),
+  param("chatId").isMongoId().withMessage("L'id du chat est invalide"),
+  param("userId").isMongoId().withMessage("L'id de l'utilisateur est invalide"),
   body("role")
   .isIn(["user", "moderator", "admin"])
   .withMessage("Le rôle est invalide"),
-  body("userId").isMongoId().withMessage("L'id de l'utilisateur est invalide"),
 ];
 
 export const removeUserFromChat = [

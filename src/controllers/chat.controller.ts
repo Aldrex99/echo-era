@@ -206,14 +206,19 @@ export const updateChatInfo = async (req: IRequestUser, res: Response, next: Nex
   await validationErrorsUtil(errors, res);
 
   try {
-    const {id} = req.params;
+    const {chatId} = req.params;
 
     // Check if user is admin or moderator of the chat
-    const chat = await chatService.getChatInfo(id);
+    const chat = await chatService.getChatInfo(chatId);
     await participantRoleVerify(["admin", "moderator"], chat, req.user.id, res);
 
+    // Check if chat type is group
+    if (chat.type !== "group") {
+      classicFailOrErrorResponse("Vous n'êtes pas autorisé à modifier ce chat", 403, res);
+    }
+
     // Update chat info
-    await chatService.updateChatInfo(id, req.body);
+    await chatService.updateChatInfo(chatId, req.body);
 
     return res.status(200).json({
       message: "Informations du chat mises à jour",
@@ -231,19 +236,19 @@ export const updateChatParticipantRole = async (req: IRequestUser, res: Response
   await validationErrorsUtil(errors, res);
 
   try {
-    const {id} = req.params;
+    const {chatId, userId} = req.params;
 
     // Check if user is admin of the chat
-    const chat = await chatService.getChatInfo(id);
+    const chat = await chatService.getChatInfo(chatId);
     await participantRoleVerify(["admin"], chat, req.user.id, res);
 
-    const participantToChange = chat.participants.find(participant => participant.id.toString() === req.body.userId);
+    const participantToChange = chat.participants.find(participant => participant.id.toString() === userId);
     if (participantToChange === undefined) {
       classicFailOrErrorResponse("L'utilisateur n'est pas dans le chat", 422, res);
     }
 
     // Update chat participant role
-    await chatService.updateChatParticipantRole(id, req.body.userId, req.body.role);
+    await chatService.updateChatParticipantRole(chatId, userId, req.body.role);
 
     return res.status(200).json({
       message: "Rôle du participant mis à jour",

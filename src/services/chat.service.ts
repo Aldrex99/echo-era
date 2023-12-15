@@ -240,27 +240,11 @@ export const declineChatRequest = async (requestId: string, userId: string) => {
 }
 
 export const updateChatInfo = async (chatId: string, data: IChatUpdate) => {
-  // Retrieve chat
-  const chat = await Chat.findById(chatId);
-
-  // Check if chat exists
-  if (!chat) {
-    throw new AppError("Le chat n'existe pas", 404);
-  }
-
   // Update chat
   await Chat.findOneAndUpdate({_id: chatId}, data);
 }
 
 export const updateChatParticipantRole = async (chatId: string, userId: string, role: 'user' | 'moderator' | 'admin') => {
-  // Retrieve chat
-  const chat = await Chat.findById(chatId);
-
-  // Check if chat exists
-  if (!chat) {
-    throw new AppError("Le chat n'existe pas", 404);
-  }
-
   // Update chat participant role
   await Chat.findOneAndUpdate({_id: chatId, "participants.user": userId}, {"participants.$.role": role});
 }

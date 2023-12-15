@@ -26,11 +26,11 @@ router.post("/accept-chat/:requestId", chatValidator.acceptChatRequest, chatCont
 // POST api/chat/decline-chat - Decline chat request
 router.post("/decline-chat/:requestId", chatValidator.declineChatRequest, chatController.declineChatRequest);
 
-// PUT api/chat - Update chat info
-router.put("/:id", chatValidator.updateChatInfo, chatController.updateChatInfo);
+// PUT api/chat/:chatId - Update chat info
+router.put("/:chatId", chatValidator.updateChatInfo, chatController.updateChatInfo);
 
-// POST api/chat/update-participant-role/:id - Update participant role
-router.post("/update-participant-role/:id", chatValidator.updateChatParticipantRole, chatController.updateChatParticipantRole);
+// POST api/chat/update-participant-role/:chatId/:userId - Update participant role
+router.post("/update-participant-role/:chatId/:userId", chatValidator.updateChatParticipantRole, chatController.updateChatParticipantRole);
 
 // POST api/chat/remove-participant/:id - Remove participant
 router.post("/remove-participant/:id", chatValidator.removeUserFromChat, chatController.removeUserFromChat);
