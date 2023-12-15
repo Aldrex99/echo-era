@@ -38,8 +38,8 @@ router.post("/remove-participant/:chatId/:userId", chatValidator.removeUserFromC
 // POST api/chat/leave-chat/:chatId - Leave chat
 router.post("/leave-chat/:chatId", chatValidator.leaveChat, chatController.leaveChat);
 
-// DELETE api/chat/:id - Delete chat
-router.delete("/:id", chatValidator.deleteChat, chatController.deleteChat);
+// DELETE api/chat/:chatId - Delete chat
+router.delete("/:chatId", chatValidator.deleteChat, chatController.deleteChat);
 
 // GET api/chat/search-chat?query="..."&limit=10&offset=10 - Search chat
 router.get("/search-chat", chatValidator.searchChats, chatController.searchChats);

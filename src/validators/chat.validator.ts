@@ -74,7 +74,7 @@ export const leaveChat = [
 ];
 
 export const deleteChat = [
-  param("id").isMongoId().withMessage("L'id du chat est invalide"),
+  param("chatId").isMongoId().withMessage("L'id du chat est invalide"),
 ];
 
 export const searchChats = [

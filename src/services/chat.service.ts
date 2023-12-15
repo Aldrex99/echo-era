@@ -11,6 +11,7 @@ import {
 } from "../types/chat.type";
 import ChatRequest from "../models/ChatRequest.model";
 import { AppError } from "../utils/error.util";
+import { ObjectId } from "mongodb";
 
 // Modify chat for get unread messages and last message
 const unreadAndLastMessage = async (chats: IChatDocumentMongo[], userId: string) => {
@@ -314,7 +315,7 @@ export const leaveChat = async (chatId: string, userId: string) => {
   await Chat.findOneAndUpdate({_id: chatId}, {$pull: {participants: {user: userId}}});
 }
 
-export const deleteChat = async (chatId: string) => {
+export const deleteChat = async (chatId: string, deleterId: string) => {
   // Retrieve chat
   const chat = await Chat.findById(chatId);
 
@@ -325,6 +326,23 @@ export const deleteChat = async (chatId: string) => {
 
   // Delete chat
   await Chat.findOneAndDelete({_id: chatId});
+
+  // Delete chat requests
+  await ChatRequest.deleteMany({chatId: chatId});
+
+  // Delete messages
+  await Message.updateMany({chat: chatId}, {
+    $set: {
+      deleted: true, deletedBy: [new ObjectId(deleterId)], editHistory: [
+        {
+          date: Date.now(),
+          content: "Ce message a été supprimé car le chat a été supprimé",
+          by: deleterId,
+          role: 'chatOwner'
+        }
+      ]
+    }
+  });
 }
 
 export const searchChats = async (userId: string, search: string, limit: number, offset: number) => {

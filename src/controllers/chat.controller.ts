@@ -312,14 +312,14 @@ export const deleteChat = async (req: IRequestUser, res: Response, next: NextFun
   await validationErrorsUtil(errors, res);
 
   try {
-    const {id} = req.params;
+    const {chatId} = req.params;
 
     // Check if user is admin of the chat
-    const chat = await chatService.getChatInfo(id);
+    const chat = await chatService.getChatInfo(chatId);
     await participantRoleVerify(["admin"], chat, req.user.id, res);
 
     // Delete chat
-    await chatService.deleteChat(id);
+    await chatService.deleteChat(chatId, req.user.id);
 
     return res.status(200).json({
       message: "Chat supprimé",
