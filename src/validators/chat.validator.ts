@@ -37,11 +37,11 @@ export const addUserToChat = [
 ];
 
 export const acceptChatRequest = [
-  body("requestId").isMongoId().withMessage("L'id de la requête est invalide"),
+  param("requestId").isMongoId().withMessage("L'id de la requête est invalide"),
 ];
 
 export const declineChatRequest = [
-  body("requestId").isMongoId().withMessage("L'id de la requête est invalide"),
+  param("requestId").isMongoId().withMessage("L'id de la requête est invalide"),
 ];
 
 export const updateChatInfo = [

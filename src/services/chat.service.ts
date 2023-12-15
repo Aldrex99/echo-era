@@ -1,7 +1,14 @@
 import Chat from "../models/Chat.model";
 import User from "../models/User.model";
 import Message from "../models/Message.model";
-import { IChatCreation, IChatDocumentMongo, IChatUpdate, IGetChat, IRawChatInfo } from "../types/chat.type";
+import {
+  IChatCreation,
+  IChatDocumentMongo,
+  IChatUpdate,
+  IGetChat,
+  IRawChatInfo,
+  IRawChatRequest
+} from "../types/chat.type";
 import ChatRequest from "../models/ChatRequest.model";
 import { AppError } from "../utils/error.util";
 
@@ -19,6 +26,36 @@ const unreadAndLastMessage = async (chats: IChatDocumentMongo[], userId: string)
       };
     })
   );
+}
+
+const chatRequestExistsAndAlreadyParticipant = async (requestId: string, userId: string) => {
+  const request = await ChatRequest.findOne({_id: requestId});
+
+  // Check if request exists
+  if (!request) {
+    throw new AppError("La demande n'existe pas", 404);
+  }
+
+  // Check if request is for the user
+  if (request.to.toString() !== userId) {
+    throw new AppError("Vous n'êtes pas autorisé à accepter cette demande", 403);
+  }
+
+  // Retrieve chat
+  const chat = await Chat.findById(request.chatId);
+
+  // Check if chat exists
+  if (!chat) {
+    throw new AppError("Le chat n'existe pas", 404);
+  }
+
+  // Check if user is already in the chat
+  const participant = chat.participants.find(participant => participant.user.toString() === userId);
+  if (participant) {
+    throw new AppError("Vous faites déjà partie du chat", 403);
+  }
+
+  return chat;
 }
 
 export const createChat = async (data: IChatCreation, participantsForRequest: string[]) => {
@@ -158,62 +195,27 @@ export const addUserToChat = async (chatId: string, userId: string) => {
   // Save request
   newRequest.save().then((request) => {
     return request;
-  }).catch((error) => {
-    throw error;
+  }).catch(() => {
+    throw new AppError("Impossible d'envoyer une invitation à cet utilisateur", 500);
   });
 }
 
 export const getChatRequests = async (userId: string) => {
   // Retrieve chat requests
-  const chatsInvitation = await ChatRequest.find({to: userId});
-
-  // Retrieve usernames of the request senders and wait for the results
-  const fromChats = await Promise.all(
-    chatsInvitation.map(request => Chat.findOne({_id: request.chatId}, {name: 1}))
-  );
+  const chatsInvitation: IRawChatRequest[] = await ChatRequest.find({to: userId}, {__v: 0}).populate("chatId", "name");
 
   // Format the requests
-  return chatsInvitation.map((request, index) => {
+  return chatsInvitation.map((request) => {
     return {
       id: request._id,
-      from: fromChats[index] ? fromChats[index].name : null,
+      from: request.chatId.name,
     };
   });
 }
 
-const chatRequestExists = async (requestId: string, userId: string) => {
-  const request = await ChatRequest.findOne({_id: requestId});
-
-  // Check if request exists
-  if (!request) {
-    throw new AppError("La demande n'existe pas", 404);
-  }
-
-  // Check if request is for the user
-  if (request.to.toString() !== userId) {
-    throw new AppError("Vous n'êtes pas autorisé à accepter cette demande", 403);
-  }
-
-  // Retrieve chat
-  const chat = await Chat.findById(request.chatId);
-
-  // Check if chat exists
-  if (!chat) {
-    throw new AppError("Le chat n'existe pas", 404);
-  }
-
-  // Check if user is already in the chat
-  const participant = chat.participants.find(participant => participant.user.toString() === userId);
-  if (participant) {
-    throw new AppError("Vous faites déjà partie du chat", 403);
-  }
-
-  return chat;
-}
-
 export const acceptChatRequest = async (requestId: string, userId: string) => {
   // Retrieve request
-  const chat = await chatRequestExists(requestId, userId);
+  const chat = await chatRequestExistsAndAlreadyParticipant(requestId, userId);
 
   // Add user to chat
   chat.participants.push({
@@ -231,7 +233,7 @@ export const acceptChatRequest = async (requestId: string, userId: string) => {
 
 export const declineChatRequest = async (requestId: string, userId: string) => {
   // Retrieve request
-  await chatRequestExists(requestId, userId);
+  await chatRequestExistsAndAlreadyParticipant(requestId, userId);
 
   // Delete request
   await ChatRequest.findOneAndDelete({_id: requestId});

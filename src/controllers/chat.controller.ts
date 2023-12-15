@@ -148,7 +148,7 @@ export const getChatRequests = async (req: IRequestUser, res: Response, next: Ne
     const requests = await chatService.getChatRequests(req.user.id);
 
     return res.status(200).json({
-      message: "Demandes d'amis récupérées",
+      message: "Demandes de chat récupérées",
       requests: requests,
     });
   } catch (err) {
@@ -164,7 +164,7 @@ export const acceptChatRequest = async (req: IRequestUser, res: Response, next: 
   await validationErrorsUtil(errors, res);
 
   try {
-    const {requestId} = req.body;
+    const {requestId} = req.params;
 
     // Accept chat invitation
     await chatService.acceptChatRequest(requestId, req.user.id);
@@ -185,7 +185,7 @@ export const declineChatRequest = async (req: IRequestUser, res: Response, next:
   await validationErrorsUtil(errors, res);
 
   try {
-    const {requestId} = req.body;
+    const {requestId} = req.params;
 
     // Decline chat invitation
     await chatService.declineChatRequest(requestId, req.user.id);

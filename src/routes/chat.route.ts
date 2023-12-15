@@ -20,11 +20,11 @@ router.post("/add-user/:id", chatValidator.addUserToChat, chatController.addUser
 // GET api/chat/requests - Get chat request of the user
 router.get("/requests", chatController.getChatRequests);
 
-// POST api/chat/accept-chat - Accept chat request
-router.post("/accept-chat", chatValidator.acceptChatRequest, chatController.acceptChatRequest);
+// POST api/chat/accept-chat/:requestId - Accept chat request
+router.post("/accept-chat/:requestId", chatValidator.acceptChatRequest, chatController.acceptChatRequest);
 
 // POST api/chat/decline-chat - Decline chat request
-router.post("/decline-chat", chatValidator.declineChatRequest, chatController.declineChatRequest);
+router.post("/decline-chat/:requestId", chatValidator.declineChatRequest, chatController.declineChatRequest);
 
 // PUT api/chat - Update chat info
 router.put("/:id", chatValidator.updateChatInfo, chatController.updateChatInfo);
