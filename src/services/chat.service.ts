@@ -7,14 +7,38 @@ import {
   IChatUpdate,
   IGetChat,
   IRawChatInfo,
-  IRawChatRequest
+  IRawChatRequest,
+  IRawChatList
 } from "../types/chat.type";
 import ChatRequest from "../models/ChatRequest.model";
 import { AppError } from "../utils/error.util";
 import { ObjectId } from "mongodb";
 
+// Check if chat is private and remove user from participants and set name to username of the other participant
+const privateRemoveUserAndSetName = async (chats: IRawChatList[], userId: string) => {
+  return await Promise.all(
+    chats.map(async (chat) => {
+      if (chat.type === "private") {
+        // Trouver l'index du participant à retirer
+        const index = chat.participants.findIndex(p => p.user._id.toString() === userId.toString());
+
+        // Si le participant est trouvé, retirez-le du tableau
+        if (index !== -1) {
+          chat.participants.splice(index, 1);
+        }
+
+        // Set name to username of the other participant
+        if (chat.participants.length === 1) {
+          chat.name = chat.participants[0].user.username;
+        }
+      }
+      return chat;
+    })
+  );
+}
+
 // Modify chat for get unread messages and last message
-const unreadAndLastMessage = async (chats: IChatDocumentMongo[], userId: string) => {
+const unreadAndLastMessage = async (chats: IChatDocumentMongo[] | IRawChatList[], userId: string) => {
   return await Promise.all(
     chats.map(async (chat) => {
       const notReadMessages = await Message.countDocuments({chat: chat._id, readBy: {$ne: userId}});
@@ -29,6 +53,7 @@ const unreadAndLastMessage = async (chats: IChatDocumentMongo[], userId: string)
   );
 }
 
+// Chat exists and user is already participant
 const chatRequestExistsAndAlreadyParticipant = async (requestId: string, userId: string) => {
   const request = await ChatRequest.findOne({_id: requestId});
 
@@ -103,7 +128,7 @@ export const getUserChats = async (userId: string, limit: number, offset: number
   const queryCondition = {$or: [{type: "public"}, {'participants.user': userId}]};
 
   // Get chats of the user and public chats
-  const chats = await Chat.find(queryCondition, {
+  const chats: IRawChatList[] = await Chat.find(queryCondition, {
     __v: 0,
     createdAt: 0,
     messages: 0,
@@ -112,22 +137,12 @@ export const getUserChats = async (userId: string, limit: number, offset: number
     'participants.role': 0
   }).skip(offset * limit).limit(limit).populate("participants.user", "username");
 
-  // If chat is private remove user from participants
-  chats.forEach((chat) => {
-    if (chat.type === "private") {
-      // Trouver l'index du participant à retirer
-      const index = chat.participants.findIndex(p => p.user._id.toString() === userId.toString());
-
-      // Si le participant est trouvé, retirez-le du tableau
-      if (index !== -1) {
-        chat.participants.splice(index, 1);
-      }
-    }
-  });
+  // Format the chats
+  const formattedChats = await privateRemoveUserAndSetName(chats, userId);
 
   // Get unread messages and last message for each chat and return the results
   return {
-    chats: await unreadAndLastMessage(chats, userId),
+    chats: await unreadAndLastMessage(formattedChats, userId),
     total: await Chat.countDocuments(queryCondition)
   };
 }
@@ -345,19 +360,29 @@ export const deleteChat = async (chatId: string, deleterId: string) => {
   });
 }
 
-export const searchChats = async (userId: string, search: string, limit: number, offset: number) => {
-  if (offset < 1 || limit < 1) {
-    throw new AppError("Les paramètres limit et offset doivent être supérieurs à 0", 422);
-  }
-
+export const searchChats = async (userId: string, search: string) => {
   // Search chats
-  const chats = await Chat.find({$and: [{name: {$regex: search, $options: 'i'}}, {'participants.user': userId}]}, {
-    name: 1,
-    description: 1,
-    type: 1,
-    messages: 1
-  }).skip(offset - 1).limit(limit);
+  const chats: IRawChatList[] = await Chat.find({'participants.user': userId}, {
+    __v: 0,
+    createdAt: 0,
+    messages: 0,
+    'participants._id': 0,
+    'participants.date': 0,
+    'participants.role': 0
+  }).populate("participants.user", "username");
+
+  const formattedChats = await privateRemoveUserAndSetName(chats, userId);
+
+  // Search chats by name
+  const chatsByName: IRawChatList[] = formattedChats.map((chat) => {
+    if (chat.name.toLowerCase().includes(search.toLowerCase())) {
+      return chat;
+    }
+  });
+
+  // Clear undefined values
+  const chatsByNameFiltered: IRawChatList[] = chatsByName.filter((chat) => chat);
 
   // Get unread messages and last message for each chat
-  return await unreadAndLastMessage(chats, userId);
+  return await unreadAndLastMessage(chatsByNameFiltered, userId);
 }

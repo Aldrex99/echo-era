@@ -41,7 +41,7 @@ router.post("/leave-chat/:chatId", chatValidator.leaveChat, chatController.leave
 // DELETE api/chat/:chatId - Delete chat
 router.delete("/:chatId", chatValidator.deleteChat, chatController.deleteChat);
 
-// GET api/chat/search-chat?query="..."&limit=10&offset=10 - Search chat
+// GET api/chat/search-chat?search="..." - Search chat
 router.get("/search-chat", chatValidator.searchChats, chatController.searchChats);
 
 export default router;

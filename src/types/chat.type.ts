@@ -70,3 +70,17 @@ export interface IRawChatRequest {
   to: Types.ObjectId;
   date: Date;
 }
+
+export interface IRawChatList {
+  _id: Types.ObjectId;
+  name: string;
+  description: string;
+  type: "public" | "private" | "group";
+  participants: {
+    user: {
+      _id: Types.ObjectId;
+      username: string;
+    };
+  }[];
+  createdAt: Date;
+}

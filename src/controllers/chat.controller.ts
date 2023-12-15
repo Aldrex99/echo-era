@@ -337,10 +337,10 @@ export const searchChats = async (req: IRequestUser, res: Response, next: NextFu
   await validationErrorsUtil(errors, res);
 
   try {
-    const {query, limit, offset} = req.query;
+    const {search} = req.query;
 
     // Get chats
-    const chats = await chatService.searchChats(req.user.id, query as string, parseInt(limit as string), parseInt(offset as string));
+    const chats = await chatService.searchChats(req.user.id, search as string);
 
     return res.status(200).json({
       message: "Chats récupérés",

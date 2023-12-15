@@ -78,15 +78,7 @@ export const deleteChat = [
 ];
 
 export const searchChats = [
-  query("query")
+  query("search")
   .isLength({min: 1})
   .withMessage("La recherche est invalide"),
-  query("limit")
-  .optional()
-  .isInt({min: 1})
-  .withMessage("Le nombre de chats à récupérer est invalide"),
-  query("offset")
-  .optional()
-  .isInt({min: 1})
-  .withMessage("L'offset est invalide"),
 ];
