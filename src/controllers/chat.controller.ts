@@ -344,7 +344,8 @@ export const searchChats = async (req: IRequestUser, res: Response, next: NextFu
 
     return res.status(200).json({
       message: "Chats récupérés",
-      chats,
+      chats: chats.chats,
+      total: chats.total,
     });
   } catch (err) {
     if (err) {

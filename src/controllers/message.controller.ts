@@ -84,7 +84,8 @@ export const getChatMessages = async (req: IRequestUser, res: Response, next: Ne
     // Send response
     res.status(200).json({
       message: 'Messages récupérés',
-      messagesData: messages
+      messagesData: messages.message,
+      total: messages.total
     });
   } catch (err) {
     next(err);
@@ -106,7 +107,8 @@ export const searchMessages = async (req: IRequestUser, res: Response, next: Nex
     // Send response
     res.status(200).json({
       message: 'Messages récupérés',
-      messagesData: messages
+      messagesData: messages.message,
+      total: messages.total
     });
   } catch (err) {
     next(err);

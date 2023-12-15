@@ -135,10 +135,21 @@ export const getChatMessages = async (userId: string, chatId: string, limit: num
   const blockedUsers: IBlockedUser[] = await User.find({_id: userId}, {blockedUsers: 1});
 
   // Replace message content by "Utilisateur bloqué" if user is blocked
-  return replaceMessageContent(message, blockedUsers);
+  return {
+    message: replaceMessageContent(message, blockedUsers),
+    total: await Message.countDocuments({chat: chatId})
+  }
 }
 
 export const searchMessages = async (userId: string, chatId: string, search: string, limit: number, offset: number) => {
+  const queryConditions = {
+    $and: [{chat: chatId}, {
+      content: {
+        $regex: search,
+        $options: 'i'
+      }
+    }]
+  }
   // Check if chat exists
   const chat = await Chat.findById(chatId);
   if (!chat) {
@@ -152,14 +163,7 @@ export const searchMessages = async (userId: string, chatId: string, search: str
   }
 
   // Search messages
-  const message: IRawMessage[] = await Message.find({
-    $and: [{chat: chatId}, {
-      content: {
-        $regex: search,
-        $options: 'i'
-      }
-    }]
-  }, {
+  const message: IRawMessage[] = await Message.find(queryConditions, {
     _id: 1,
     sender: 1,
     chat: 1,
@@ -180,7 +184,10 @@ export const searchMessages = async (userId: string, chatId: string, search: str
   const blockedUsers: IBlockedUser[] = await User.find({_id: userId}, {blockedUsers: 1});
 
   // Replace message content by "Utilisateur bloqué" if user is blocked
-  return replaceMessageContent(message, blockedUsers);
+  return {
+    message: replaceMessageContent(message, blockedUsers),
+    total: await Message.countDocuments(queryConditions)
+  };
 }
 
 export const reportMessage = async (reporterId: string, messageId: string, reason: string) => {

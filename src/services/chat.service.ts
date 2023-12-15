@@ -361,8 +361,9 @@ export const deleteChat = async (chatId: string, deleterId: string) => {
 }
 
 export const searchChats = async (userId: string, search: string) => {
+  const queryCondition = {'participants.user': userId};
   // Search chats
-  const chats: IRawChatList[] = await Chat.find({'participants.user': userId}, {
+  const chats: IRawChatList[] = await Chat.find(queryCondition, {
     __v: 0,
     createdAt: 0,
     messages: 0,
@@ -384,5 +385,8 @@ export const searchChats = async (userId: string, search: string) => {
   const chatsByNameFiltered: IRawChatList[] = chatsByName.filter((chat) => chat);
 
   // Get unread messages and last message for each chat
-  return await unreadAndLastMessage(chatsByNameFiltered, userId);
+  return {
+    chats: await unreadAndLastMessage(chatsByNameFiltered, userId),
+    total: await Chat.countDocuments(queryCondition),
+  }
 }
