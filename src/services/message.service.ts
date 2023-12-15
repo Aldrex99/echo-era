@@ -15,13 +15,14 @@ export const sendMessage = async (senderId: string, chatId: string, content: str
   // Check if user is in the chat
   const participant = chat.participants.find(participant => participant.user.toString() === senderId);
   if (!participant) {
-    throw new AppError("Vous n'êtes pas dans ce chat", 403);
+    throw new AppError("Vous n'êtes pas dans le chat ou vous essayer d'envoyer un message", 403);
   }
 
   const message = new Message({
     sender: senderId,
     chat: chatId,
-    content
+    content,
+    readBy: [new ObjectId(senderId)]
   });
   await message.save();
   return message;

@@ -1,7 +1,7 @@
 import { body, param, query } from "express-validator";
 
 export const sendMessage = [
-  body('chatId')
+  param('chatId')
   .exists().withMessage("Le chat est requis")
   .isMongoId().withMessage("Le chat est invalide"),
   body('content')
@@ -10,16 +10,16 @@ export const sendMessage = [
 ];
 
 export const editMessage = [
-  body('messageId')
-  .exists().withMessage("Le message est requis")
-  .isMongoId().withMessage("Le message est invalide"),
+  param('messageId')
+  .exists().withMessage("Le message à modifier est requis")
+  .isMongoId().withMessage("Le message à modifier est invalide"),
   body('content')
-  .exists().withMessage("Le contenu est requis")
-  .isString().withMessage("Le contenu est invalide")
+  .exists().withMessage("Le contenu modifier est requis")
+  .isString().withMessage("Le contenu modifier est invalide")
 ];
 
 export const deleteMessage = [
-  body('messageId')
+  param('messageId')
   .exists().withMessage("Le message est requis")
   .isMongoId().withMessage("Le message est invalide")
 ];
