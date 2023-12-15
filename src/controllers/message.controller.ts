@@ -119,7 +119,8 @@ export const reportMessage = async (req: IRequestUser, res: Response, next: Next
   await validationErrorsUtil(errors, res);
 
   try {
-    const {messageId, reason} = req.body;
+    const {messageId} = req.params;
+    const {reason} = req.body;
 
     // Report message
     await messageService.reportMessage(req.user.id, messageId, reason);

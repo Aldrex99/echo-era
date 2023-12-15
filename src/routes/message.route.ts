@@ -20,7 +20,7 @@ router.get("/chat/:chatId", messageValidator.getChatMessages, messageController.
 // GET api/message/search/chatId?search="..."&limit=10&offset=1 - Search messages
 router.get("/search/:chatId", messageValidator.searchMessages, messageController.searchMessages);
 
-// POST api/message/report - Report message
-router.post("/report", messageValidator.reportMessage, messageController.reportMessage);
+// POST api/message/report/:messageId - Report message
+router.post("/report/:messageId", messageValidator.reportMessage, messageController.reportMessage);
 
 export default router;

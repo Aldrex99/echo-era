@@ -4,6 +4,20 @@ import Report from "../models/Report.model";
 import { AppError } from "../utils/error.util";
 import { ObjectId } from "mongodb";
 import User from "../models/User.model";
+import { IBlockedUser, IRawMessage } from "../types/message.type";
+
+const replaceMessageContent = (message: IRawMessage[], blockedUsers: IBlockedUser[]) => {
+  return message.map(message => {
+    const blocked = blockedUsers[0].blockedUsers.find(blockedUser => blockedUser.user.toString() === message.sender._id.toString());
+    if (blocked) {
+      message.content = "Utilisateur bloqué";
+    }
+    if (message.deleted) {
+      message.content = "Message supprimé";
+    }
+    return message;
+  });
+}
 
 export const sendMessage = async (senderId: string, chatId: string, content: string) => {
   // Check if chat exists
@@ -87,10 +101,6 @@ export const deleteMessage = async (deleteId: string, messageId: string) => {
 }
 
 export const getChatMessages = async (userId: string, chatId: string, limit: number, offset: number) => {
-  if (offset < 1 || limit < 1) {
-    throw new AppError("Les paramètres limit et offset doivent être supérieurs à 0", 422);
-  }
-
   // Check if chat exists
   const chat = await Chat.findById(chatId);
   if (!chat) {
@@ -104,82 +114,73 @@ export const getChatMessages = async (userId: string, chatId: string, limit: num
   }
 
   // Get chat messages
-  const message = await Message.find({chat: chatId}, {
+  const message: IRawMessage[] = await Message.find({chat: chatId}, {
     _id: 1,
     sender: 1,
     chat: 1,
     content: 1,
     date: 1,
     readBy: 1,
-    editHistory: 1
+    editHistory: 1,
+    deleted: 1,
   })
   .sort({date: -1})
-  .skip(offset - 1)
+  .skip(offset * limit)
   .limit(limit)
-  .populate('sender', 'username')
-  .populate('readBy', 'username')
+  .populate('sender', 'username profile.avatar')
+  .populate('readBy', 'username profile.avatar')
   .populate('editHistory.by', 'username');
 
   // Get blocked user ids
-  const blockedUsers = await User.find({_id: userId}, {blockedUsers: 1});
+  const blockedUsers: IBlockedUser[] = await User.find({_id: userId}, {blockedUsers: 1});
 
   // Replace message content by "Utilisateur bloqué" if user is blocked
-  message.forEach(message => {
-    const blocked = blockedUsers[0].blockedUsers.find(blockedUser => blockedUser.user.toString() === message.sender._id.toString());
-    if (blocked) {
-      message.content = "Utilisateur bloqué";
-    }
-    if (message.deleted) {
-      message.content = "Message supprimé";
-    }
-  });
-
-  return message;
+  return replaceMessageContent(message, blockedUsers);
 }
 
 export const searchMessages = async (userId: string, chatId: string, search: string, limit: number, offset: number) => {
-  if (offset < 1 || limit < 1) {
-    throw new AppError("Les paramètres limit et offset doivent être supérieurs à 0", 422);
-  }
-
   // Check if chat exists
   const chat = await Chat.findById(chatId);
   if (!chat) {
     throw new AppError("Le chat n'existe pas", 404);
   }
 
+  // Check if user is in the chat
+  const participant = chat.participants.find(participant => participant.user.toString() === userId);
+  if (!participant) {
+    throw new AppError("Vous n'êtes pas dans ce chat", 403);
+  }
+
   // Search messages
-  const message = await Message.find({$and: [{chat: chatId}, {content: {$regex: search, $options: 'i'}}]}, {
+  const message: IRawMessage[] = await Message.find({
+    $and: [{chat: chatId}, {
+      content: {
+        $regex: search,
+        $options: 'i'
+      }
+    }]
+  }, {
     _id: 1,
     sender: 1,
     chat: 1,
     content: 1,
     date: 1,
     readBy: 1,
-    editHistory: 1
+    editHistory: 1,
+    deleted: 1,
   })
   .sort({date: -1})
-  .skip(offset - 1)
+  .skip(offset * limit)
   .limit(limit)
-  .populate('sender', 'username')
-  .populate('readBy', 'username')
+  .populate('sender', 'username profile.avatar')
+  .populate('readBy', 'username profile.avatar')
   .populate('editHistory.by', 'username');
 
   // Get blocked user ids
-  const blockedUsers = await User.find({_id: userId}, {blockedUsers: 1});
+  const blockedUsers: IBlockedUser[] = await User.find({_id: userId}, {blockedUsers: 1});
 
   // Replace message content by "Utilisateur bloqué" if user is blocked
-  message.forEach(message => {
-    const blocked = blockedUsers[0].blockedUsers.find(blockedUser => blockedUser.user.toString() === message.sender._id.toString());
-    if (blocked) {
-      message.content = "Utilisateur bloqué";
-    }
-    if (message.deleted) {
-      message.content = "Message supprimé";
-    }
-  });
-
-  return message;
+  return replaceMessageContent(message, blockedUsers);
 }
 
 export const reportMessage = async (reporterId: string, messageId: string, reason: string) => {
@@ -189,11 +190,6 @@ export const reportMessage = async (reporterId: string, messageId: string, reaso
   // Check if message exists
   if (!message) {
     throw new AppError("Le message n'existe pas", 404);
-  }
-
-  // Check if message is deleted
-  if (message.deleted) {
-    throw new AppError("Le message a été supprimé", 403);
   }
 
   // Check if user has already reported the message
