@@ -14,12 +14,24 @@ export const getOtherProfile = [
   param("otherUserId").isMongoId().withMessage("L'id de l'utilisateur est incorrect"),
 ];
 
-export const userIdValidation = [
-  body("id").isMongoId().withMessage("L'id de l'utilisateur est incorrect"),
+export const addFriend = [
+  param("receiverId").isMongoId().withMessage("L'id de l'utilisateur est incorrect"),
 ];
 
-export const requestIdValidation = [
-  body("id").isMongoId().withMessage("L'id de la requête est incorrect"),
+export const acceptFriendRequest = [
+  param("requestId").isMongoId().withMessage("L'id de la requête est incorrect"),
+];
+
+export const declineFriendRequest = [
+  param("requestId").isMongoId().withMessage("L'id de la requête est incorrect"),
+];
+
+export const cancelFriendRequest = [
+  param("requestId").isMongoId().withMessage("L'id de la requête est incorrect"),
+];
+
+export const userIdValidation = [
+  body("id").isMongoId().withMessage("L'id de l'utilisateur est incorrect"),
 ];
 
 export const reportUser = [

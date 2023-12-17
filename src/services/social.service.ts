@@ -4,7 +4,14 @@ import FriendRequest from "../models/FriendRequest.model";
 import Report from "../models/Report.model";
 import { createPrivateChat } from "./chat.service";
 import { AppError } from "../utils/error.util";
-import { IActualUser, IGetFriends, IGetOtherProfile, IGetUser } from "../types/social.type";
+import {
+  IActualUser,
+  IGetFriends,
+  IGetOtherProfile,
+  IGetUser,
+  IReceivedRequests,
+  ISentRequests
+} from "../types/social.type";
 
 const friendAndBlockedUsersProjection = async (userId: string, users: IGetUser[]) => {
   // Get users friends and blocked users
@@ -114,7 +121,7 @@ export const addFriend = async (userId: string, id: string) => {
   // Check if request already exists
   const request = await FriendRequest.findOne({$or: [{from: userId, to: id}, {from: id, to: userId}]});
   if (request) {
-    throw new AppError("Une demande a déjà été envoyée", 422);
+    throw new AppError("Vous avez déjà reçus ou envoyé une demande", 422);
   }
 
   // Create request
@@ -133,20 +140,30 @@ export const addFriend = async (userId: string, id: string) => {
 
 export const getFriendRequests = async (userId: string) => {
   // Retrieve friend requests
-  const requests = await FriendRequest.find({to: userId});
+  const receivedRequests: IReceivedRequests[] = await FriendRequest.find({to: userId}).populate("from", "username");
+  const sentRequests: ISentRequests[] = await FriendRequest.find({from: userId}).populate("to", "username");
 
-  // Retrieve usernames of the request senders and wait for the results
-  const fromUsers = await Promise.all(
-    requests.map(request => User.findOne({_id: request.from}, {username: 1, date: 1}))
-  );
-
-  // Format the requests
-  return requests.map((request, index) => {
+  // Format requests
+  const formattedRequests = receivedRequests.map((request) => {
     return {
-      id: request._id,
-      from: fromUsers[index] ? fromUsers[index].username : null,
+      _id: request._id,
+      from: request.from,
+      date: request.date,
     };
   });
+
+  const formattedSentRequests = sentRequests.map((request) => {
+    return {
+      _id: request._id,
+      to: request.to,
+      date: request.date,
+    };
+  });
+
+  return {
+    receivedRequests: formattedRequests,
+    sentRequests: formattedSentRequests,
+  };
 };
 
 export const acceptFriendRequest = async (userId: string, requestId: string) => {

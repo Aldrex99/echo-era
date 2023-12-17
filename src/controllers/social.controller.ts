@@ -72,10 +72,10 @@ export const addFriend = async (req: IRequestUser, res: Response, next: NextFunc
   await validationErrorsUtil(errors, res);
 
   try {
-    const {id} = req.body;
+    const {receiverId} = req.params;
 
     // Add friends
-    await socialService.addFriend(req.user.id, id);
+    await socialService.addFriend(req.user.id, receiverId);
 
     return res.status(200).json({
       message: "Demande d'ami envoyée",
@@ -110,10 +110,10 @@ export const acceptFriendRequest = async (req: IRequestUser, res: Response, next
   await validationErrorsUtil(errors, res);
 
   try {
-    const {id} = req.body;
+    const {requestId} = req.params;
 
     // Accept friend request
-    await socialService.acceptFriendRequest(req.user.id, id);
+    await socialService.acceptFriendRequest(req.user.id, requestId);
 
     return res.status(200).json({
       message: "Demande d'ami acceptée",
@@ -131,10 +131,10 @@ export const declineFriendRequest = async (req: IRequestUser, res: Response, nex
   await validationErrorsUtil(errors, res);
 
   try {
-    const {id} = req.body;
+    const {requestId} = req.params;
 
     // Decline friend request
-    await socialService.declineFriendRequest(req.user.id, id);
+    await socialService.declineFriendRequest(req.user.id, requestId);
 
     return res.status(200).json({
       message: "Demande d'ami refusée",
@@ -152,10 +152,10 @@ export const cancelFriendRequest = async (req: IRequestUser, res: Response, next
   await validationErrorsUtil(errors, res);
 
   try {
-    const {id} = req.body;
+    const {requestId} = req.params;
 
     // Cancel friend request
-    await socialService.cancelFriendRequest(req.user.id, id);
+    await socialService.cancelFriendRequest(req.user.id, requestId);
 
     return res.status(200).json({
       message: "Demande d'ami annulée",

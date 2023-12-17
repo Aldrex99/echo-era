@@ -50,3 +50,23 @@ export interface IGetFriends {
     _id: Types.ObjectId;
   }[];
 }
+
+export interface IReceivedRequests {
+  _id: Types.ObjectId;
+  from: {
+    _id: Types.ObjectId;
+    username: string;
+  };
+  to: Types.ObjectId;
+  date: Date;
+}
+
+export interface ISentRequests {
+  _id: Types.ObjectId;
+  from: Types.ObjectId;
+  to: {
+    _id: Types.ObjectId;
+    username: string;
+  };
+  date: Date;
+}

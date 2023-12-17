@@ -14,20 +14,20 @@ router.get("/profile/:otherUserId", socialValidator.getOtherProfile, socialContr
 // GET api/social/friends - Get friends
 router.get("/friends", socialController.getFriends);
 
-// POST api/social/add-friend - Add friend
-router.post("/add-friend", socialValidator.userIdValidation, socialController.addFriend);
+// POST api/social/add-friend/:receiverId - Add friend
+router.post("/add-friend/:receiverId", socialValidator.addFriend, socialController.addFriend);
 
 // GET api/social/friend-requests - Get friend requests
 router.get("/friend-requests", socialController.getFriendRequests);
 
-// POST api/social/accept-friend - Accept friend
-router.post("/accept-friend", socialValidator.requestIdValidation, socialController.acceptFriendRequest);
+// POST api/social/accept-friend/:requestId - Accept friend
+router.post("/accept-friend/:requestId", socialValidator.acceptFriendRequest, socialController.acceptFriendRequest);
 
-// POST api/social/refuse-friend - Refuse friend
-router.post("/decline-friend", socialValidator.requestIdValidation, socialController.declineFriendRequest);
+// POST api/social/refuse-friend/:requestId - Refuse friend
+router.post("/decline-friend/:requestId", socialValidator.declineFriendRequest, socialController.declineFriendRequest);
 
-// POST api/social/cancel-friend - Cancel friend request
-router.post("/cancel-friend", socialValidator.requestIdValidation, socialController.cancelFriendRequest);
+// POST api/social/cancel-friend/:requestId - Cancel friend request
+router.post("/cancel-friend/:requestId", socialValidator.cancelFriendRequest, socialController.cancelFriendRequest);
 
 // POST api/social/remove-friend - Remove friend
 router.post("/remove-friend", socialValidator.userIdValidation, socialController.removeFriend);
