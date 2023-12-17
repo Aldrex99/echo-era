@@ -1,23 +1,24 @@
-import { NextFunction, Request, Response } from 'express'
-import { IRequestUser, IUserForUser } from '../types/user.type'
+import { NextFunction, Response } from 'express'
+import { IRequestUser } from '../types/user.type'
 import { validationResult } from "express-validator";
 import { validationErrorsUtil } from "../utils/validationErrors.util";
 import * as socialService from "../services/social.service";
 
 // Search users by username
-export const searchUsers = async (req: Request, res: Response, next: NextFunction) => {
+export const searchUsers = async (req: IRequestUser, res: Response, next: NextFunction) => {
   const errors = validationResult(req);
   await validationErrorsUtil(errors, res);
 
   try {
-    const {query, limit} = req.query;
+    const {search, limit} = req.query;
 
     // Get users
-    const users: IUserForUser[] = await socialService.searchUser(query as string, parseInt(limit as string));
+    const users = await socialService.searchUser(search as string, parseInt(limit as string), req.user.id);
 
     return res.status(200).json({
       message: "Utilisateurs récupérés",
-      users: users,
+      users: users.users,
+      total: users.total,
     });
   } catch (err) {
     if (err) {
@@ -27,15 +28,15 @@ export const searchUsers = async (req: Request, res: Response, next: NextFunctio
 }
 
 // Get other user profile
-export const getOtherProfile = async (req: Request, res: Response, next: NextFunction) => {
+export const getOtherProfile = async (req: IRequestUser, res: Response, next: NextFunction) => {
   const errors = validationResult(req);
   await validationErrorsUtil(errors, res);
 
   try {
-    const {id} = req.params;
+    const {otherUserId} = req.params;
 
     // Get user
-    const user: IUserForUser = await socialService.getOtherProfile(id);
+    const user = await socialService.getOtherProfile(otherUserId, req.user.id);
 
     return res.status(200).json({
       message: "Utilisateur récupéré",

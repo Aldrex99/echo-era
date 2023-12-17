@@ -134,7 +134,7 @@ export const getUsersByMultipleFields = async (fields: ISearchFields[], query: s
   });
 
   return {
-    result: await User.find({$or: orFields}).skip(pages).limit(limit),
-    totalCount: await User.find({$or: orFields}).countDocuments(),
+    result: await User.find({$or: orFields}).skip(pages * limit).limit(limit),
+    total: await User.countDocuments({$or: orFields}),
   };
 }

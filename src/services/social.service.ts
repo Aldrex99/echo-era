@@ -1,42 +1,99 @@
-import { getUsersByMultipleFields } from "./user.service";
 import { userForUser } from "../utils/formatUser.util";
 import User from "../models/User.model";
 import FriendRequest from "../models/FriendRequest.model";
 import Report from "../models/Report.model";
 import { createPrivateChat } from "./chat.service";
 import { AppError } from "../utils/error.util";
+import { IActualUser, IGetFriends, IGetOtherProfile, IGetUser } from "../types/social.type";
 
-export const searchUser = async (query: string, limit: number) => {
-  // Get users
-  const users = await getUsersByMultipleFields([{field: "username"}], query, 0, limit);
+const friendAndBlockedUsersProjection = async (userId: string, users: IGetUser[]) => {
+  // Get users friends and blocked users
+  const actualUser: IActualUser = await User.findOne({_id: userId}, {friends: 1, blockedUsers: 1});
 
-  // Format users
-  return users.result.map((user) => {
-    return userForUser(user);
+  // Add isFriend and isBlocked fields to users
+  const formattedUsers: IGetUser[] = users.map((u) => {
+    return {
+      _id: u._id,
+      username: u.username,
+      profile: u.profile,
+      role: u.role,
+      isFriend: !!actualUser.friends.find((friend) => friend.friend.toString() === u._id.toString()),
+      isBlocked: !!actualUser.blockedUsers.find((blockedUser) => blockedUser.user.toString() === u._id.toString()),
+    };
   });
+
+  return formattedUsers;
 }
 
-export const getOtherProfile = async (id: string) => {
+export const searchUser = async (search: string, limit: number, userId: string) => {
+  const queryConditions = {username: {$regex: search, $options: "i"}}
+  // Get users
+  const users: IGetUser[] = await User.find(queryConditions, {
+    _id: 1,
+    username: 1,
+    profile: 1,
+    role: 1
+  }).limit(limit);
+
+  // Remove actual user from users
+  const userIsInUsers = users.findIndex((u) => u._id.toString() === userId);
+  if (userIsInUsers === 0) {
+    users.splice(users.findIndex((u) => u._id.toString() === userId), 1);
+  }
+
+  // Add isFriend and isBlocked fields to users
+  const formattedUser: IGetUser[] = await friendAndBlockedUsersProjection(userId, users);
+
+  return {
+    users: formattedUser,
+    total: userIsInUsers === 0 ? await User.countDocuments(queryConditions) - 1 : await User.countDocuments(queryConditions),
+  };
+}
+
+export const getOtherProfile = async (id: string, userId: string) => {
   // Get user
-  const user = await User.findOne({_id: id});
+  const user: IGetOtherProfile = await User.findOne({_id: id}, {
+    _id: 1,
+    username: 1,
+    profile: 1,
+    role: 1,
+    friends: 1,
+    blockedUsers: 1,
+  });
+
+  // If user does not exist
+  if (!user) {
+    throw new AppError("Cet utilisateur n'existe pas", 404);
+  }
+
+  // Get friends requests
+  const friendRequestSendTo = await FriendRequest.findOne({from: userId, to: id});
+  const friendRequestReceiveFrom = await FriendRequest.findOne({from: id, to: userId});
 
   // Format user
-  return userForUser(user);
+  const formattedUser: IGetOtherProfile = {
+    _id: user._id,
+    username: user.username,
+    profile: user.profile,
+    role: user.role,
+    isFriend: !!user.friends.find((friend) => friend.friend.toString() === userId),
+    isBlocked: !!user.blockedUsers.find((blockedUser) => blockedUser.user.toString() === userId),
+    friendRequestSent: friendRequestSendTo?._id.toString() || false,
+    friendRequestReceived: friendRequestReceiveFrom?._id.toString() || false,
+  };
+
+  return formattedUser;
 }
 
 export const getFriends = async (userId: string) => {
   // Get user
-  const user = await User.findOne({_id: userId}, {friends: 1});
+  const friends: IGetFriends = await User.findOne({_id: userId}, {friends: 1}).populate("friends.friend", 'username _id');
 
-  // Get friends
-  const friends = await Promise.all(
-    user.friends.map((friend) => User.findOne({_id: friend.friend}, {_id: 1, username: 1}))
-  );
-
-  return friends.map((friend) => {
+  // Format friends
+  return friends.friends.map((friend) => {
     return {
-      id: friend._id,
-      username: friend.username,
+      _id: friend.friend._id,
+      username: friend.friend.username
     };
   });
 }
