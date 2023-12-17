@@ -1,11 +1,14 @@
-import { userForUser } from "../utils/formatUser.util";
 import User from "../models/User.model";
 import FriendRequest from "../models/FriendRequest.model";
 import Report from "../models/Report.model";
-import { createPrivateChat } from "./chat.service";
+import Chat from "../models/Chat.model";
+import ChatRequest from "../models/ChatRequest.model";
+import { createPrivateChat, leaveChat } from "./chat.service";
 import { AppError } from "../utils/error.util";
 import {
   IActualUser,
+  IGetBlockedChats,
+  IGetBlockedUsers,
   IGetFriends,
   IGetOtherProfile,
   IGetUser,
@@ -239,7 +242,7 @@ export const removeFriend = async (userId: string, friendId: string) => {
   // Remove friend from the user's friend list
   await User.updateOne({_id: userId}, {$pull: {friends: {friend: friendId}}});
 
-  // Optionally, remove the user from the friend's friend list
+  // Remove the user from the friend's friend list
   await User.updateOne({_id: friendId}, {$pull: {friends: {friend: userId}}});
 
   // Return a message or some confirmation
@@ -308,16 +311,78 @@ export const unblockUser = async (userId: string, id: string) => {
 
 export const getBlockedUsers = async (userId: string) => {
   // Get user block list
-  const blockedUsers = await User.findOne({_id: userId}, {blockedUsers: 1});
+  const blockedUsers: IGetBlockedUsers = await User.findOne({_id: userId}, {blockedUsers: 1}).populate("blockedUsers.user", "username _id");
 
-  // Get blocked users
-  const users = await Promise.all(
-    blockedUsers.blockedUsers.map((user) => User.findOne({_id: user.user}))
-  );
+  // Format blocked users
+  return blockedUsers.blockedUsers.map((user) => {
+    return {
+      _id: user.user._id,
+      username: user.user.username,
+    };
+  });
+}
 
-  // Format users
-  return users.map((user) => {
-    return userForUser(user);
+export const blockChat = async (userId: string, chatId: string) => {
+  // Retrieve chat
+  const chat = await Chat.findOne({_id: chatId});
+
+  // If the chat does not exist
+  if (!chat) {
+    throw new AppError("Ce chat n'existe pas", 404);
+  }
+
+  // If the user is in the chat leave the chat
+  if (chat.participants.find((participant) => participant.user.toString() === userId)) {
+    await leaveChat(chatId, userId);
+  }
+
+  // If chat type is private
+  if (chat.type === "private") {
+    throw new AppError("Vous devez bloquer votre ami pour bloquer ce chat", 403);
+  }
+
+  // If chat is already blocked by the user
+  const user = await User.findOne({_id: userId, 'blockedChats.chat': chatId});
+  if (user) {
+    throw new AppError("Ce chat est déjà bloqué", 422);
+  }
+
+  // Remove chat request
+  await ChatRequest.findOneAndDelete({user: userId, chat: chatId});
+
+  // Block chat
+  await User.updateOne({_id: userId}, {$push: {blockedChats: {chat: chatId}}});
+}
+
+export const unblockChat = async (userId: string, chatId: string) => {
+  // Retrieve chat
+  const chat = await Chat.findOne({_id: chatId});
+
+  // If the chat does not exist
+  if (!chat) {
+    throw new AppError("Ce chat n'existe pas", 404);
+  }
+
+  // If chat is not blocked by the user
+  const user = await User.findOne({_id: userId, 'blockedChats.chat': chatId});
+  if (!user) {
+    throw new AppError("Ce chat n'est pas bloqué", 422);
+  }
+
+  // Unblock chat
+  await User.updateOne({_id: userId}, {$pull: {blockedChats: {chat: chatId}}});
+}
+
+export const getBlockedChats = async (userId: string) => {
+  // Get user blocked chats
+  const blockedChats: IGetBlockedChats = await User.findOne({_id: userId}, {blockedChats: 1}).populate("blockedChats.chat", "name _id");
+
+  // Format blocked chats
+  return blockedChats.blockedChats.map((chat) => {
+    return {
+      _id: chat.chat._id,
+      name: chat.chat.name,
+    };
   });
 }
 

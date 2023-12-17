@@ -29,17 +29,26 @@ router.post("/decline-friend/:requestId", socialValidator.declineFriendRequest, 
 // POST api/social/cancel-friend/:requestId - Cancel friend request
 router.post("/cancel-friend/:requestId", socialValidator.cancelFriendRequest, socialController.cancelFriendRequest);
 
-// POST api/social/remove-friend - Remove friend
-router.post("/remove-friend", socialValidator.userIdValidation, socialController.removeFriend);
+// POST api/social/remove-friend/:friendId - Remove friend
+router.post("/remove-friend/:friendId", socialValidator.removeFriend, socialController.removeFriend);
 
-// POST api/social/block-user - Block user
-router.post("/block-user", socialValidator.userIdValidation, socialController.blockUser);
+// POST api/social/block-user/:otherUserId - Block user
+router.post("/block-user/:otherUserId", socialValidator.blockUser, socialController.blockUser);
 
-// POST api/social/unblock-user - Unblock user
-router.post("/unblock-user", socialValidator.userIdValidation, socialController.unblockUser);
+// POST api/social/unblock-user/:blockedId - Unblock user
+router.post("/unblock-user/:blockedId", socialValidator.unblockUser, socialController.unblockUser);
 
 // GET api/social/blocked-users - Get blocked users
 router.get("/blocked-users", socialController.getBlockedUsers);
+
+// POST api/social/block-chat/:chatId - Block chat
+router.post("/block-chat/:chatId", socialValidator.blockChat, socialController.blockChat);
+
+// POST api/social/unblock-chat/:chatId - Unblock chat
+router.post("/unblock-chat/:chatId", socialValidator.unblockChat, socialController.unblockChat);
+
+// GET api/social/blocked-chats - Get blocked chats
+router.get("/blocked-chats", socialController.getBlockedChats);
 
 // POST api/social/report-user - Report user
 router.post("/report-user", socialValidator.reportUser, socialController.reportUser);

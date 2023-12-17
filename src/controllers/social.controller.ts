@@ -173,10 +173,10 @@ export const removeFriend = async (req: IRequestUser, res: Response, next: NextF
   await validationErrorsUtil(errors, res);
 
   try {
-    const {id} = req.body;
+    const {friendId} = req.params;
 
     // Remove friends
-    await socialService.removeFriend(req.user.id, id);
+    await socialService.removeFriend(req.user.id, friendId);
 
     return res.status(200).json({
       message: "Ami supprimé",
@@ -194,10 +194,10 @@ export const blockUser = async (req: IRequestUser, res: Response, next: NextFunc
   await validationErrorsUtil(errors, res);
 
   try {
-    const {id} = req.body;
+    const {otherUserId} = req.params;
 
     // Block user
-    await socialService.blockUser(req.user.id, id);
+    await socialService.blockUser(req.user.id, otherUserId);
 
     return res.status(200).json({
       message: "Utilisateur bloqué",
@@ -215,10 +215,10 @@ export const unblockUser = async (req: IRequestUser, res: Response, next: NextFu
   await validationErrorsUtil(errors, res);
 
   try {
-    const {id} = req.body;
+    const {blockedId} = req.params;
 
     // Unblock user
-    await socialService.unblockUser(req.user.id, id);
+    await socialService.unblockUser(req.user.id, blockedId);
 
     return res.status(200).json({
       message: "Utilisateur débloqué",
@@ -239,6 +239,59 @@ export const getBlockedUsers = async (req: IRequestUser, res: Response, next: Ne
     return res.status(200).json({
       message: "Utilisateurs bloqués récupérés",
       blockedUsers: blockedUsers,
+    });
+  } catch (err) {
+    if (err) {
+      return next(err);
+    }
+  }
+}
+
+// Block chat
+export const blockChat = async (req: IRequestUser, res: Response, next: NextFunction) => {
+  try {
+    const {chatId} = req.params;
+
+    // Block chat
+    await socialService.blockChat(req.user.id, chatId);
+
+    return res.status(200).json({
+      message: "Chat bloqué",
+    });
+  } catch (err) {
+    if (err) {
+      return next(err);
+    }
+  }
+}
+
+// Unblock chat
+export const unblockChat = async (req: IRequestUser, res: Response, next: NextFunction) => {
+  try {
+    const {chatId} = req.params;
+
+    // Unblock chat
+    await socialService.unblockChat(req.user.id, chatId);
+
+    return res.status(200).json({
+      message: "Chat débloqué",
+    });
+  } catch (err) {
+    if (err) {
+      return next(err);
+    }
+  }
+}
+
+// Get blocked chats
+export const getBlockedChats = async (req: IRequestUser, res: Response, next: NextFunction) => {
+  try {
+    // Get blocked chats
+    const blockedChats = await socialService.getBlockedChats(req.user.id);
+
+    return res.status(200).json({
+      message: "Chats bloqués récupérés",
+      blockedChats: blockedChats,
     });
   } catch (err) {
     if (err) {

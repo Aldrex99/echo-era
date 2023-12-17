@@ -7,8 +7,8 @@ import {
   IChatUpdate,
   IGetChat,
   IRawChatInfo,
-  IRawChatRequest,
-  IRawChatList
+  IRawChatList,
+  IRawChatRequest
 } from "../types/chat.type";
 import ChatRequest from "../models/ChatRequest.model";
 import { AppError } from "../utils/error.util";
@@ -358,6 +358,9 @@ export const deleteChat = async (chatId: string, deleterId: string) => {
       ]
     }
   });
+
+  // Delete chat requests
+  await User.findOneAndUpdate({"blockedChats.chat": chatId}, {$pull: {blockedChats: {chat: chatId}}});
 }
 
 export const searchChats = async (userId: string, search: string) => {

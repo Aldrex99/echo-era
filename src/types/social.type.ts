@@ -70,3 +70,27 @@ export interface ISentRequests {
   };
   date: Date;
 }
+
+export interface IGetBlockedUsers {
+  _id: Types.ObjectId;
+  blockedUsers: {
+    user: {
+      _id: Types.ObjectId;
+      username: string;
+    };
+    _id: Types.ObjectId;
+    date: Date;
+  }[];
+}
+
+export interface IGetBlockedChats {
+  _id: Types.ObjectId;
+  blockedChats: {
+    chat: {
+      _id: Types.ObjectId;
+      name: string;
+    };
+    _id: Types.ObjectId;
+    date: Date;
+  }[];
+}

@@ -30,8 +30,24 @@ export const cancelFriendRequest = [
   param("requestId").isMongoId().withMessage("L'id de la requête est incorrect"),
 ];
 
-export const userIdValidation = [
-  body("id").isMongoId().withMessage("L'id de l'utilisateur est incorrect"),
+export const removeFriend = [
+  param("friendId").isMongoId().withMessage("L'id de l'utilisateur est incorrect"),
+];
+
+export const blockUser = [
+  param("otherUserId").isMongoId().withMessage("L'id de l'utilisateur est incorrect"),
+];
+
+export const unblockUser = [
+  param("blockedId").isMongoId().withMessage("L'id de l'utilisateur est incorrect"),
+];
+
+export const blockChat = [
+  param("chatId").isMongoId().withMessage("L'id du chat est incorrect"),
+];
+
+export const unblockChat = [
+  param("chatId").isMongoId().withMessage("L'id du chat est incorrect"),
 ];
 
 export const reportUser = [
