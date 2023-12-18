@@ -50,7 +50,7 @@ router.post("/unblock-chat/:chatId", socialValidator.unblockChat, socialControll
 // GET api/social/blocked-chats - Get blocked chats
 router.get("/blocked-chats", socialController.getBlockedChats);
 
-// POST api/social/report-user - Report user
-router.post("/report-user", socialValidator.reportUser, socialController.reportUser);
+// POST api/social/report-user/:otherUserId - Report user
+router.post("/report-user/:otherUserId", socialValidator.reportUser, socialController.reportUser);
 
 export default router;

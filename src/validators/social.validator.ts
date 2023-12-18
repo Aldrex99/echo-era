@@ -51,7 +51,6 @@ export const unblockChat = [
 ];
 
 export const reportUser = [
-  body("id").isMongoId().withMessage("L'id de l'utilisateur est incorrect"),
-  body("message").optional().isMongoId().withMessage("L'id du message est incorrect"),
+  param("otherUserId").isMongoId().withMessage("L'id de l'utilisateur est incorrect"),
   body("reason").isString().withMessage("Le format de la raison est incorrecte"),
 ];

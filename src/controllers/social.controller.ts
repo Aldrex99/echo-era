@@ -306,10 +306,11 @@ export const reportUser = async (req: IRequestUser, res: Response, next: NextFun
   await validationErrorsUtil(errors, res);
 
   try {
-    const {id, messageId, reason} = req.body;
+    const {otherUserId} = req.params;
+    const {reason} = req.body;
 
     // Report user
-    await socialService.reportUser(req.user.id, id, messageId, reason);
+    await socialService.reportUser(req.user.id, otherUserId, reason);
 
     return res.status(200).json({
       message: "Utilisateur signalé",

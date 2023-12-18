@@ -386,7 +386,7 @@ export const getBlockedChats = async (userId: string) => {
   });
 }
 
-export const reportUser = async (userId: string, id: string, messageId: string, reason: string) => {
+export const reportUser = async (userId: string, id: string, reason: string) => {
   // Verify if the user exists
   const reportedUser = await User.findOne({_id: id});
 
@@ -399,7 +399,6 @@ export const reportUser = async (userId: string, id: string, messageId: string, 
   const newReport = new Report({
     userId: id,
     reportedBy: userId,
-    messageId,
     reason,
   });
 
