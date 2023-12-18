@@ -1,7 +1,6 @@
 import User from "../models/User.model";
 import { IUserCreation } from "../types/user.type";
 import { checkPassword, hashPassword } from "../utils/password.util";
-import { personalUser } from "../utils/formatUser.util";
 import { AppError } from "../utils/error.util";
 
 export const emailExists = async (email: string) => {
@@ -34,18 +33,30 @@ export const verifyEmail = async (verificationCode: string) => {
 }
 
 export const login = async (email: string, password: string) => {
-  const user = await User.find({email: email});
+  const user = await User.findOne({email: email}, {
+    _id: 1,
+    username: 1,
+    email: 1,
+    password: 1,
+    profile: 1,
+    role: 1,
+    isVerifierd: 1,
+    lastLogout: 1
+  });
 
   if (!user) {
     throw new AppError("L'email ou le mot de passe est incorrect", 401);
   }
   // Check password
-  const isMatch = await checkPassword(password, user[0].password);
+  const isMatch = await checkPassword(password, user.password);
   if (!isMatch) {
     throw new AppError("L'email ou le mot de passe est incorrect", 401);
   }
-  // Format user and return it
-  return personalUser(user[0]);
+
+  // Remove password from user
+  user.password = undefined;
+
+  return user;
 }
 
 export const logout = async (userId: string) => {

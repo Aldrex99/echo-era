@@ -88,20 +88,6 @@ export interface IUserMongo {
   deletedAt?: Date;
 }
 
-export interface IPersonalUser {
-  id: string;
-  username?: string;
-  email?: string;
-  profile?: IProfile;
-  role: 'user' | 'moderator' | 'admin';
-  isVerified: boolean;
-  friends: IFriend[];
-  blockedUsers: IBlockedUser[];
-  createdAt: Date;
-  updatedAt: Date;
-  lastLogout: Date;
-}
-
 export interface IPersonalUserUpdate {
   username?: string;
   email?: string;

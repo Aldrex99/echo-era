@@ -2,7 +2,7 @@ import { NextFunction, Request, Response } from 'express'
 import { validationResult } from "express-validator";
 import * as authService from "../services/auth.service";
 import { hashPassword } from "../utils/password.util";
-import { IPersonalUser, IRequestUser, IUserCreation } from "../types/user.type";
+import { IRequestUser, IUserCreation } from "../types/user.type";
 import * as mail from "../utils/mailer.util";
 import * as token from "../utils/tokens.util";
 import uuidGenerate from "../utils/uuid.util";
@@ -80,12 +80,12 @@ export const login = async (req: Request, res: Response, next: NextFunction) => 
   const errors = validationResult(req);
   await validationErrorsUtil(errors, res);
 
-  // Get email and password
-  const {email, password} = req.body;
-
   try {
+    // Get email and password
+    const {email, password} = req.body;
+
     // Login user
-    const user: IPersonalUser = await authService.login(email, password);
+    const user = await authService.login(email, password);
 
     const accessToken = token.generateAccessToken(user.id, user.role);
     const refreshToken = token.generateRefreshToken(user.id);
