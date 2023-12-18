@@ -1,17 +1,42 @@
 import User from "../models/User.model";
-import { IPersonalUserUpdate, IUserMongo } from "../types/user.type";
+import { IPersonalUserUpdate } from "../types/user.type";
 import { ISearchFields } from "../types/global.type";
 import { emailExists, usernameExists } from "./auth.service";
 import FriendRequest from "../models/FriendRequest.model";
 import { AppError } from "../utils/error.util";
+import deletedNameUtil from "../utils/deletedName.util";
 
 // Get user by id
 export const getUserById = async (id: string) => {
   return User.findById(id);
 }
 
+export const getProfile = async (id: string) => {
+  const user = await User.findOne({_id: id}, {
+    _id: 1,
+    username: 1,
+    email: 1,
+    profile: 1,
+    role: 1,
+    isVerifierd: 1,
+    lastLogout: 1
+  });
+
+  if (!user) {
+    throw new AppError("Utilisateur introuvable", 404);
+  }
+
+  return user;
+}
+
 // Update user
-export const updateUser = async (user: IUserMongo, data: IPersonalUserUpdate) => {
+export const updateUser = async (userId: string, data: IPersonalUserUpdate) => {
+  const user = await User.findById(userId, {username: 1, email: 1, profile: 1});
+
+  if (!user) {
+    throw new AppError("Utilisateur introuvable", 404);
+  }
+
   if (data.username && data.username !== user.username) {
     const usernameAlreadyExists = await usernameExists(data.username);
     if (usernameAlreadyExists.length > 0) {
@@ -44,20 +69,24 @@ export const updateUser = async (user: IUserMongo, data: IPersonalUserUpdate) =>
     }
   }
 
-  console.log(user)
-
-  return User.findOneAndUpdate({_id: user._id}, user, {new: true});
+  await User.findOneAndUpdate({_id: user._id}, user, {new: true});
 }
 
-export const deleteUser = async (id: string) => {
-  const user = await getUserById(id);
+export const deleteUser = async (userId: string) => {
+  const user = await User.findById(userId);
+
+  if (!user) {
+    throw new AppError("Utilisateur introuvable", 404);
+  }
+
+  const deletedCode = await deletedNameUtil();
 
   if (user) {
     user.deletedAt = new Date();
     user.emailOnDelete = user.email;
     user.usernameOnDelete = user.username;
-    user.username = null;
-    user.email = null;
+    user.username = deletedCode;
+    user.email = deletedCode + "@echo-era.com";
     user.password = null;
     user.profile.avatar = null;
     user.isActive = false;
@@ -73,8 +102,8 @@ export const deleteUser = async (id: string) => {
   // Delete user in other friends' friends, blockedUsers
   const friends = await User.find({
     $or: [
-      {'friends.friend': id},
-      {'blockedUsers.user': id},
+      {'friends.friend': userId},
+      {'blockedUsers.user': userId},
     ]
   });
 
@@ -83,12 +112,12 @@ export const deleteUser = async (id: string) => {
     const friend = friends[i];
 
     // Filter friends
-    const filteredFriends = friend.friends.filter(f => f.friend.toString() !== id);
+    const filteredFriends = friend.friends.filter(f => f.friend.toString() !== userId);
     // Reset and fill DocumentArray friends
     friend.friends.splice(0, friend.friends.length, ...filteredFriends);
 
     // Filter blockedUsers
-    const filteredBlockedUsers = friend.blockedUsers.filter(bu => bu.user.toString() !== id);
+    const filteredBlockedUsers = friend.blockedUsers.filter(bu => bu.user.toString() !== userId);
     // Reset and fill DocumentArray blockedUsers
     friend.blockedUsers.splice(0, friend.blockedUsers.length, ...filteredBlockedUsers);
 
@@ -101,8 +130,8 @@ export const deleteUser = async (id: string) => {
     $and: [
       {
         $or: [
-          {'fromUser': id},
-          {'toUser': id},
+          {'fromUser': userId},
+          {'toUser': userId},
         ]
       },
       {'status': 'pending'}
