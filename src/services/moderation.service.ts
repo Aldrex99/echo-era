@@ -6,8 +6,20 @@ import { IReportedMessage, ISearchFields, ISearchReportResult } from "../types/g
 import Message from "../models/Message.model";
 import { ObjectId } from "mongodb";
 
-export const getAllUsers = async () => {
-  return User.find();
+export const getAllUsers = async (offset: number, limit: number, sortField: string, sortOrder: number) => {
+  const sortOptions = {};
+  sortOptions[sortField] = sortOrder;
+
+  return User.find({}, {
+    _id: 1,
+    username: 1,
+    role: 1,
+    isActive: 1,
+    warnings: 1,
+    isMuted: 1,
+    isBanned: 1,
+    sanctionReason: 1
+  }).sort(sortOptions).skip(offset * limit).limit(limit);
 }
 
 export const getUserById = async (id: string) => {

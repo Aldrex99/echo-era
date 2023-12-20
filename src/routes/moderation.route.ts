@@ -4,8 +4,8 @@ import * as moderationValidator from "../validators/moderation.validator";
 
 const router: Router = Router();
 
-// GET api/moderation/users - Get all users
-router.get('/users', moderationController.getAllUsers);
+// GET api/moderation/users?limit=1&offset=0 - Get all users
+router.get('/users', moderationValidator.getAllUsers, moderationController.getAllUsers);
 
 // GET api/moderation/search-users - Search users by usernames, previousNames, emails, previousEmails, usernameOnDelete, emailOnDelete
 router.get('/search-users', moderationValidator.searchUsers, moderationController.searchUsers);

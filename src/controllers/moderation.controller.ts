@@ -1,4 +1,4 @@
-import { Response, NextFunction } from "express";
+import { NextFunction, Response } from "express";
 import { IRequestUser } from "../types/user.type";
 import * as moderationService from '../services/moderation.service';
 import { getUsersByMultipleFields } from "../services/user.service";
@@ -9,16 +9,19 @@ import { validationErrorsUtil } from "../utils/validationErrors.util";
 
 // Get all users
 export const getAllUsers = async (req: IRequestUser, res: Response, next: NextFunction) => {
-  try {
-    const users = await moderationService.getAllUsers();
+  const errors = validationResult(req);
+  await validationErrorsUtil(errors, res);
 
-    const formattedUsers = users.map((user) => {
-      return userForModeration(user);
-    });
+  try {
+    const {limit, offset, sort = 'username', direction = 'asc'} = req.query;
+
+    const order = direction === 'asc' ? 1 : -1;
+
+    const users = await moderationService.getAllUsers(parseInt(offset as string), parseInt(limit as string), sort as string, order);
 
     return res.status(200).json({
       message: "Utilisateurs récupérés",
-      users: formattedUsers,
+      users: users,
     });
   } catch (err) {
     next(err);
@@ -35,10 +38,7 @@ export const searchUsers = async (req: IRequestUser, res: Response, next: NextFu
     const fields: ISearchFields[] = [
       {field: 'username'},
       {field: {field: 'previousNames', elemMatch: 'username'}},
-      {field: 'email'},
-      {field: {field: 'previousEmails', elemMatch: 'email'}},
       {field: 'usernameOnDelete'},
-      {field: 'emailOnDelete'},
     ];
 
 
