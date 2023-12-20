@@ -10,7 +10,7 @@ export const getAllUsers = async (offset: number, limit: number, sortField: stri
   const sortOptions = {};
   sortOptions[sortField] = sortOrder;
 
-  return User.find({}, {
+  const users = await User.find({}, {
     _id: 1,
     username: 1,
     role: 1,
@@ -20,6 +20,43 @@ export const getAllUsers = async (offset: number, limit: number, sortField: stri
     isBanned: 1,
     sanctionReason: 1
   }).sort(sortOptions).skip(offset * limit).limit(limit);
+
+  return {
+    users,
+    total: await User.countDocuments(),
+  };
+}
+
+export const searchUsers = async (search: string, offset: number, limit: number) => {
+  const queryConditions = {
+    $or: [{
+      username: {
+        $regex: search,
+        $options: "i"
+      }
+    }, {previousNames: {$elemMatch: {username: {$regex: search, $options: "i"}}}}, {
+      usernameOnDelete: {
+        $regex: search,
+        $options: "i"
+      }
+    }]
+  };
+
+  const users = await User.find(queryConditions, {
+    _id: 1,
+    username: 1,
+    role: 1,
+    isActive: 1,
+    warnings: 1,
+    isMuted: 1,
+    isBanned: 1,
+    sanctionReason: 1
+  }).skip(offset * limit).limit(limit);
+
+  return {
+    users,
+    total: await User.countDocuments(queryConditions),
+  }
 }
 
 export const getUserById = async (id: string) => {

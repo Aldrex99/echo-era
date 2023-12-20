@@ -16,7 +16,7 @@ export const getAllUsers = [
 ];
 
 export const searchUsers = [
-  query("query")
+  query("search")
   .exists().withMessage("Le champ recherche est obligatoire")
   .isString().withMessage("Le champ recherche doit être une chaîne de caractères"),
   query("limit")

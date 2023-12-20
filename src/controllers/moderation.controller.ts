@@ -1,7 +1,6 @@
 import { NextFunction, Response } from "express";
 import { IRequestUser } from "../types/user.type";
 import * as moderationService from '../services/moderation.service';
-import { getUsersByMultipleFields } from "../services/user.service";
 import { ISearchFields } from "../types/global.type";
 import { userForModeration } from "../utils/formatUser.util";
 import { validationResult } from "express-validator";
@@ -21,7 +20,8 @@ export const getAllUsers = async (req: IRequestUser, res: Response, next: NextFu
 
     return res.status(200).json({
       message: "Utilisateurs récupérés",
-      users: users,
+      users: users.users,
+      total: users.total,
     });
   } catch (err) {
     next(err);
@@ -34,23 +34,14 @@ export const searchUsers = async (req: IRequestUser, res: Response, next: NextFu
   await validationErrorsUtil(errors, res);
 
   try {
-    const {query, limit, offset} = req.query;
-    const fields: ISearchFields[] = [
-      {field: 'username'},
-      {field: {field: 'previousNames', elemMatch: 'username'}},
-      {field: 'usernameOnDelete'},
-    ];
+    const {search, limit, offset} = req.query;
 
-
-    const users = await getUsersByMultipleFields(fields, query as string, parseInt(offset as string), parseInt(limit as string));
-
-    const formattedUsers = users.result.map((user) => {
-      return userForModeration(user);
-    });
+    const users = await moderationService.searchUsers(search as string, parseInt(offset as string), parseInt(limit as string));
 
     return res.status(200).json({
       message: "Utilisateurs récupérés",
-      users: formattedUsers,
+      users: users.users,
+      total: users.total,
     });
   } catch (err) {
     next(err);
