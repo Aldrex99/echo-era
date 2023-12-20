@@ -72,10 +72,6 @@ export const getUserById = async (id: string) => {
 export const warnUser = async (userId: string, reason: string, warnerId: string) => {
   const user = await getUserById(userId);
 
-  if (!user) {
-    throw new AppError("Utilisateur introuvable", 404);
-  }
-
   // Create moderation log
   await moderationLogUtil(warnerId, userId, "warn", reason);
 
@@ -91,10 +87,6 @@ export const warnUser = async (userId: string, reason: string, warnerId: string)
 
 export const unWarnUser = async (userId: string, warnId: string, reason: string, moderatorId: string) => {
   const user = await getUserById(userId);
-
-  if (!user) {
-    throw new AppError("Utilisateur introuvable", 404);
-  }
 
   // Check if warn exists
   const warn = user.warnings.find(warn => warn._id.toString() === warnId);
@@ -112,10 +104,6 @@ export const unWarnUser = async (userId: string, warnId: string, reason: string,
 
 export const muteUser = async (userId: string, reason: string, durationInMin: number, muterId: string) => {
   const user = await getUserById(userId);
-
-  if (!user) {
-    throw new AppError("Utilisateur introuvable", 404);
-  }
 
   // Check if user is already muted
   if (user.isMuted) {
@@ -144,10 +132,6 @@ export const muteUser = async (userId: string, reason: string, durationInMin: nu
 export const unMuteUser = async (userId: string, moderatorId: string, reason: string) => {
   const user = await getUserById(userId);
 
-  if (!user) {
-    throw new AppError("Utilisateur introuvable", 404);
-  }
-
   // Check if user is muted
   if (!user.isMuted) {
     throw new AppError("Utilisateur non muté", 422);
@@ -166,10 +150,6 @@ export const unMuteUser = async (userId: string, moderatorId: string, reason: st
 
 export const banUser = async (userId: string, reason: string, durationInHours: number, bannerId: string) => {
   const user = await getUserById(userId);
-
-  if (!user) {
-    throw new AppError("Utilisateur introuvable", 404);
-  }
 
   // Check if user is already banned
   if (user.isBanned) {
@@ -197,10 +177,6 @@ export const banUser = async (userId: string, reason: string, durationInHours: n
 
 export const unBanUser = async (userId: string, moderatorId: string, reason: string) => {
   const user = await getUserById(userId);
-
-  if (!user) {
-    throw new AppError("Utilisateur introuvable", 404);
-  }
 
   // Check if user is banned
   if (!user.isBanned) {
