@@ -27,7 +27,7 @@ export const searchUsers = [
   .isInt({min: 0}).withMessage("Le nombre de pages doit être un nombre entier supérieur ou égal à 0"),
 ];
 
-export const getUserById = [
+export const getUser = [
   param("id")
   .exists().withMessage("L'id de l'utilisateur est obligatoire")
   .isMongoId().withMessage("L'id de l'utilisateur n'est pas valide"),

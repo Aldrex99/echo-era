@@ -61,7 +61,7 @@ export interface IUserMongo {
   email?: string;
   password?: string;
   profile?: IProfile;
-  role?: 'user' | 'moderator' | 'admin';
+  role?: 'user' | 'moderator' | 'admin' | 'server';
   previousNames?: IPreviousName[];
   previousEmails?: IPreviousEmail[];
   usernameOnDelete?: string;
@@ -94,19 +94,12 @@ export interface IPersonalUserUpdate {
   profile?: IProfile;
 }
 
-export interface IUserForUser {
-  id: string;
-  username?: string;
-  profile?: IProfile;
-  role: 'user' | 'moderator' | 'admin';
-}
-
 export interface IUserForModeration {
   id: string;
   username?: string;
   email?: string;
   profile?: IProfile;
-  role: 'user' | 'moderator' | 'admin';
+  role: 'user' | 'moderator' | 'admin' | 'server';
   previousNames?: IPreviousName[];
   previousEmails?: IPreviousEmail[];
   usernameOnDelete?: string;

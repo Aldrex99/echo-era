@@ -59,6 +59,26 @@ export const searchUsers = async (search: string, offset: number, limit: number)
   }
 }
 
+export const getUser = async (id: string) => {
+  return User.findById(id, {
+    _id: 1,
+    username: 1,
+    profile: 1,
+    role: 1,
+    previousNames: 1,
+    usernameOnDelete: 1,
+    isActive: 1,
+    warnings: 1,
+    isMuted: 1,
+    muteDuration: 1,
+    muteExpiresAt: 1,
+    isBanned: 1,
+    banDuration: 1,
+    banExpiresAt: 1,
+    sanctionReason: 1,
+  });
+}
+
 export const getUserById = async (id: string) => {
   const user = await User.findById(id);
 

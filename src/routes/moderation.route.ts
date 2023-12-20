@@ -11,7 +11,7 @@ router.get('/users', moderationValidator.getAllUsers, moderationController.getAl
 router.get('/search-users', moderationValidator.searchUsers, moderationController.searchUsers);
 
 // GET api/moderation/user/:id - Get user by id
-router.get('/user/:id', moderationValidator.getUserById, moderationController.getUserById);
+router.get('/user/:id', moderationValidator.getUser, moderationController.getUser);
 
 // POST api/moderation/warn/:id - Warn user
 router.post('/warn/:id', moderationValidator.warnUser, moderationController.warnUser);

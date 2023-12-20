@@ -10,7 +10,7 @@ const userSchema = new Schema({
     birthday: Date,
     location: String,
   },
-  role: {type: String, default: 'user', enum: ['user', 'moderator', 'admin']},
+  role: {type: String, default: 'user', enum: ['user', 'moderator', 'admin', 'server']},
   previousNames: [{
     username: {type: String, required: true},
     date: {type: Date, default: Date.now},
