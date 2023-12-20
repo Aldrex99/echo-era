@@ -102,7 +102,7 @@ export const warnUser = async (userId: string, reason: string, warnerId: string)
     date: new Date(),
   });
 
-  return user.save();
+  await user.save();
 }
 
 export const unWarnUser = async (userId: string, warnId: string, reason: string, moderatorId: string) => {
@@ -119,7 +119,7 @@ export const unWarnUser = async (userId: string, warnId: string, reason: string,
   await User.findOneAndUpdate({_id: userId}, {$pull: {warnings: {_id: warnId}}});
 
   // Create moderation log
-  await moderationLogUtil(moderatorId, userId, "unwarn", reason ? reason : warn.reason);
+  await moderationLogUtil(moderatorId, userId, "unworn", reason ? reason : warn.reason);
 }
 
 export const muteUser = async (userId: string, reason: string, durationInMin: number, muterId: string) => {
@@ -138,15 +138,15 @@ export const muteUser = async (userId: string, reason: string, durationInMin: nu
   user.muteDuration = durationInMin;
   user.muteExpiresAt = new Date(Date.now() + durationInMin * 60000);
 
-  const reasonAggrement = reason + ` Durée : ${durationInMin} minutes`;
+  const reasonAgreement = reason + ` Durée : ${durationInMin} minutes`;
 
   user.sanctionReason.push({
-    reason: reasonAggrement,
+    reason: reasonAgreement,
     type: "mute",
     date: new Date(),
   });
 
-  return user.save();
+  await user.save();
 }
 
 export const unMuteUser = async (userId: string, moderatorId: string, reason: string) => {
@@ -165,7 +165,7 @@ export const unMuteUser = async (userId: string, moderatorId: string, reason: st
   user.muteDuration = null;
   user.muteExpiresAt = null;
 
-  return user.save();
+  await user.save();
 }
 
 export const banUser = async (userId: string, reason: string, durationInHours: number, bannerId: string) => {
@@ -184,15 +184,15 @@ export const banUser = async (userId: string, reason: string, durationInHours: n
   user.banDuration = durationInHours;
   user.banExpiresAt = new Date(Date.now() + durationInHours * 3600000);
 
-  const reasonAggrement = reason + ` Durée : ${durationInHours} heures`;
+  const reasonAgreement = reason + ` Durée : ${durationInHours} heures`;
 
   user.sanctionReason.push({
-    reason: reasonAggrement,
+    reason: reasonAgreement,
     type: "ban",
     date: new Date(),
   });
 
-  return user.save();
+  await user.save();
 }
 
 export const unBanUser = async (userId: string, moderatorId: string, reason: string) => {
@@ -211,7 +211,7 @@ export const unBanUser = async (userId: string, moderatorId: string, reason: str
   user.banDuration = null;
   user.banExpiresAt = null;
 
-  return user.save();
+  await user.save();
 }
 
 export const getAllUsersAreWarnings = async () => {
@@ -332,7 +332,7 @@ export const changeReportStatus = async (id: string, status: "pending" | "resolv
   // Create moderation log
   await moderationLogUtil(moderatorId, report.toUser._id.toString(), 'status', `Signalement ${status}, reportId: ${id}`);
 
-  return report.save();
+  await report.save();
 }
 
 export const getReportedMessages = async () => {

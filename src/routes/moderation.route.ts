@@ -16,8 +16,8 @@ router.get('/user/:id', moderationValidator.getUser, moderationController.getUse
 // POST api/moderation/warn/:id - Warn user
 router.post('/warn/:id', moderationValidator.warnUser, moderationController.warnUser);
 
-// POST api/moderation/unwarn/:id - Unwarn user
-router.post('/unwarn/:id', moderationValidator.unWarnUser, moderationController.unWarnUser);
+// POST api/moderation/unworn/:id - Unwarn user
+router.post('/unworn/:id', moderationValidator.unWarnUser, moderationController.unWarnUser);
 
 // POST api/moderation/mute/:id - Mute user
 router.post('/mute/:id', moderationValidator.muteUser, moderationController.muteUser);
