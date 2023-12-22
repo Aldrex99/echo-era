@@ -2,7 +2,6 @@ import { NextFunction, Response } from "express";
 import { IRequestUser } from "../types/user.type";
 import * as moderationService from '../services/moderation.service';
 import { ISearchFields } from "../types/global.type";
-import { userForModeration } from "../utils/formatUser.util";
 import { validationResult } from "express-validator";
 import { validationErrorsUtil } from "../utils/validationErrors.util";
 
@@ -179,13 +178,9 @@ export const getAllUsersAreWarnings = async (req: IRequestUser, res: Response, n
   try {
     const users = await moderationService.getAllUsersAreWarnings();
 
-    const formattedUsers = users.map((user) => {
-      return userForModeration(user);
-    });
-
     return res.status(200).json({
       message: "Utilisateurs récupérés",
-      users: formattedUsers,
+      users: users,
     });
   } catch (err) {
     next(err);
@@ -197,13 +192,9 @@ export const getAllUsersAreMuted = async (req: IRequestUser, res: Response, next
   try {
     const users = await moderationService.getAllUsersAreMuted();
 
-    const formattedUsers = users.map((user) => {
-      return userForModeration(user);
-    });
-
     return res.status(200).json({
       message: "Utilisateurs récupérés",
-      users: formattedUsers,
+      users: users,
     });
   } catch (err) {
     next(err);
@@ -215,13 +206,9 @@ export const getAllUsersAreBanned = async (req: IRequestUser, res: Response, nex
   try {
     const users = await moderationService.getAllUsersAreBanned();
 
-    const formattedUsers = users.map((user) => {
-      return userForModeration(user);
-    });
-
     return res.status(200).json({
       message: "Utilisateurs récupérés",
-      users: formattedUsers,
+      users: users,
     });
   } catch (err) {
     next(err);

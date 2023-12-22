@@ -215,15 +215,42 @@ export const unBanUser = async (userId: string, moderatorId: string, reason: str
 }
 
 export const getAllUsersAreWarnings = async () => {
-  return User.find({warnings: {$not: {$size: 0}}});
+  return User.find({warnings: {$not: {$size: 0}}}, {
+    _id: 1,
+    username: 1,
+    role: 1,
+    isActive: 1,
+    warnings: 1,
+    isMuted: 1,
+    isBanned: 1,
+    sanctionReason: 1
+  });
 }
 
 export const getAllUsersAreMuted = async () => {
-  return User.find({isMuted: true});
+  return User.find({isMuted: true}, {
+    _id: 1,
+    username: 1,
+    role: 1,
+    isActive: 1,
+    warnings: 1,
+    isMuted: 1,
+    isBanned: 1,
+    sanctionReason: 1
+  });
 }
 
 export const getAllUsersAreBanned = async () => {
-  return User.find({isBanned: true});
+  return User.find({isBanned: true}, {
+    _id: 1,
+    username: 1,
+    role: 1,
+    isActive: 1,
+    warnings: 1,
+    isMuted: 1,
+    isBanned: 1,
+    sanctionReason: 1
+  });
 }
 
 export const getReports = async (status: string) => {
