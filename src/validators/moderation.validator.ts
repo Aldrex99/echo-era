@@ -100,10 +100,16 @@ export const getReports = [
   query("status")
     .exists().withMessage("Le statut est obligatoire")
     .isIn(['pending', 'resolved', 'rejected']).withMessage("Le statut doit être 'pending', 'resolved' ou 'rejected'"),
+  query("limit")
+    .exists().withMessage("La limite de résultat est obligatoire")
+    .isInt({min: 1}).withMessage("La limite de résultat doit être un nombre entier supérieur ou égal à 1"),
+  query("offset")
+    .exists().withMessage("Le numéro de page est obligatoire")
+    .isInt({min: 0}).withMessage("Le nombre de pages doit être un nombre entier supérieur ou égal à 0"),
 ];
 
 export const searchReports = [
-  query("query")
+  query("search")
     .exists().withMessage("Le champ recherche est obligatoire")
     .isString().withMessage("Le champ recherche doit être une chaîne de caractères"),
   query("limit")
@@ -115,13 +121,13 @@ export const searchReports = [
 ];
 
 export const getReportById = [
-  param("id")
+  param("reportId")
     .exists().withMessage("L'id du signalement est obligatoire")
     .isMongoId().withMessage("L'id du signalement n'est pas valide"),
 ];
 
 export const changeReportStatus = [
-  param("id")
+  param("reportId")
     .exists().withMessage("L'id du signalement est obligatoire")
     .isMongoId().withMessage("L'id du signalement n'est pas valide"),
   body("status")

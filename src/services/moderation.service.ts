@@ -253,17 +253,24 @@ export const getAllUsersAreBanned = async () => {
   });
 }
 
-export const getReports = async (status: string) => {
-  return Report.find({status});
+export const getReports = async (status: string, offset: number, limit: number) => {
+  const reports = await Report.find({status}, {__v: 0})
+    .populate("fromUser", "username")
+    .populate("toUser", "username")
+    .populate("messageId", "content")
+    .sort({date: -1})
+    .skip(offset * limit)
+    .limit(limit)
+
+  return {
+    reports,
+    total: await Report.countDocuments({status}),
+  }
 }
 
-export const getReportsByMultipleFields = async (fields: ISearchFields[], query: string, offset: number, limit: number) => {
-  if (offset < 1 || limit < 1) {
-    throw new AppError("Les paramètres limit et offset doivent être supérieurs à 0", 422);
-  }
-
+export const getReportsByMultipleFields = async (fields: ISearchFields[], search: string, offset: number, limit: number) => {
   // Get reports by reason, from username, to username, from email, to email, from usernameOnDelete, to usernameOnDelete, from emailOnDelete, to emailOnDelete, from username in PreviousUsername, to username in PreviousUsername, from email in PreviousEmail, to email in PreviousEmail
-  const reports: ISearchReportResult[] = await Report.find().populate("fromUser", "username email usernameOnDelete emailOnDelete previousNames previousEmail").populate("toUser", "username email usernameOnDelete emailOnDelete previousNames previousEmail");
+  const reports: ISearchReportResult[] = await Report.find({}, {__v: 0}).populate("fromUser", "username usernameOnDelete previousNames").populate("toUser", "username usernameOnDelete previousNames");
 
   // Filter reports
   const filteredReports = reports.filter((report) => {
@@ -274,51 +281,29 @@ export const getReportsByMultipleFields = async (fields: ISearchFields[], query:
 
       switch (field.field) {
         case "reason":
-          isReport = report?.reason?.toLowerCase().includes(query?.toLowerCase()) || isReport;
+          isReport = report?.reason?.toLowerCase().includes(search?.toLowerCase()) || isReport;
           break;
         case "fromUsername":
-          isReport = report?.fromUser?.username?.toLowerCase().includes(query?.toLowerCase()) || isReport;
+          isReport = report?.fromUser?.username?.toLowerCase().includes(search?.toLowerCase()) || isReport;
           break;
         case "toUsername":
-          isReport = report?.toUser?.username?.toLowerCase().includes(query?.toLowerCase()) || isReport;
-          break;
-        case "fromEmail":
-          isReport = report?.fromUser?.email?.toLowerCase().includes(query?.toLowerCase()) || isReport;
-          break;
-        case "toEmail":
-          isReport = report?.toUser?.email?.toLowerCase().includes(query?.toLowerCase()) || isReport;
+          isReport = report?.toUser?.username?.toLowerCase().includes(search?.toLowerCase()) || isReport;
           break;
         case "fromUsernameOnDelete":
-          isReport = report?.fromUser?.usernameOnDelete?.toLowerCase().includes(query?.toLowerCase()) || isReport;
+          isReport = report?.fromUser?.usernameOnDelete?.toLowerCase().includes(search?.toLowerCase()) || isReport;
           break;
         case "toUsernameOnDelete":
-          isReport = report?.toUser?.usernameOnDelete?.toLowerCase().includes(query?.toLowerCase()) || isReport;
-          break;
-        case "fromEmailOnDelete":
-          isReport = report?.fromUser?.emailOnDelete?.toLowerCase().includes(query?.toLowerCase()) || isReport;
-          break;
-        case "toEmailOnDelete":
-          isReport = report?.toUser?.emailOnDelete?.toLowerCase().includes(query?.toLowerCase()) || isReport;
+          isReport = report?.toUser?.usernameOnDelete?.toLowerCase().includes(search?.toLowerCase()) || isReport;
           break;
         case "fromUsernameInPreviousUsername":
           const previousNames = report?.fromUser?.previousNames?.map(pn => pn.username);
 
-          isReport = previousNames?.includes(query?.toLowerCase()) || isReport;
+          isReport = previousNames?.includes(search?.toLowerCase()) || isReport;
           break;
         case "toUsernameInPreviousUsername":
           const previousNames2 = report?.toUser?.previousNames?.map(pn => pn.username);
 
-          isReport = previousNames2?.includes(query?.toLowerCase()) || isReport;
-          break;
-        case "fromEmailInPreviousEmail":
-          const previousEmails = report?.fromUser?.previousEmail?.map(pe => pe.email);
-
-          isReport = previousEmails?.includes(query?.toLowerCase()) || isReport;
-          break;
-        case "toEmailInPreviousEmail":
-          const previousEmails2 = report?.toUser?.previousEmail?.map(pe => pe.email);
-
-          isReport = previousEmails2?.includes(query?.toLowerCase()) || isReport;
+          isReport = previousNames2?.includes(search?.toLowerCase()) || isReport;
           break;
         default:
           break;
@@ -333,11 +318,14 @@ export const getReportsByMultipleFields = async (fields: ISearchFields[], query:
   });
 
   // Paginate reports
-  return sortedReports.slice(offset - 1, offset - 1 + limit);
+  return {
+    reports: sortedReports.slice(offset, offset + limit),
+    total: sortedReports.length,
+  };
 }
 
-export const getReportById = async (id: string) => {
-  const report = await Report.findById(id).populate("fromUser", "username email").populate("toUser", "username email").populate("messageId", "content");
+export const getReportById = async (reportId: string) => {
+  const report = await Report.findById(reportId, {__v: 0}).populate("fromUser", "username").populate("toUser", "username").populate("messageId", "content");
 
   if (!report) {
     throw new AppError("Signalement introuvable", 404);
@@ -346,8 +334,8 @@ export const getReportById = async (id: string) => {
   return report;
 }
 
-export const changeReportStatus = async (id: string, status: "pending" | "resolved" | "rejected", moderatorId: string) => {
-  const report = await getReportById(id);
+export const changeReportStatus = async (reportId: string, status: "pending" | "resolved" | "rejected", moderatorId: string) => {
+  const report = await getReportById(reportId);
 
   if (!report) {
     throw new AppError("Signalement introuvable", 404);
@@ -357,7 +345,7 @@ export const changeReportStatus = async (id: string, status: "pending" | "resolv
   report.status = status;
 
   // Create moderation log
-  await moderationLogUtil(moderatorId, report.toUser._id.toString(), 'status', `Signalement ${status}, reportId: ${id}`);
+  await moderationLogUtil(moderatorId, report.toUser._id.toString(), 'status', `Signalement ${status}, reportId: ${reportId}`);
 
   await report.save();
 }

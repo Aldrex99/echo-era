@@ -386,9 +386,9 @@ export const getBlockedChats = async (userId: string) => {
   });
 }
 
-export const reportUser = async (userId: string, id: string, reason: string) => {
+export const reportUser = async (userId: string, userReportedId: string, reason: string) => {
   // Verify if the user exists
-  const reportedUser = await User.findOne({_id: id});
+  const reportedUser = await User.findOne({_id: userReportedId});
 
   // If the user does not exist
   if (!reportedUser) {
@@ -397,9 +397,9 @@ export const reportUser = async (userId: string, id: string, reason: string) => 
 
   // Create report
   const newReport = new Report({
-    userId: id,
-    reportedBy: userId,
-    reason,
+    fromUser: userId,
+    toUser: userReportedId,
+    reason: reason,
   });
 
   // Save report

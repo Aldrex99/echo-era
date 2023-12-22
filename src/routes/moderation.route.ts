@@ -46,11 +46,11 @@ router.get('/get-reports', moderationValidator.getReports, moderationController.
 // GET api/moderation/search-reports - Search reports
 router.get('/search-reports', moderationValidator.searchReports, moderationController.searchReports);
 
-// GET api/moderation/report/:id - Get report by id
-router.get('/report/:id', moderationValidator.getReportById, moderationController.getReportById);
+// GET api/moderation/report/:reportId - Get report by id
+router.get('/report/:reportId', moderationValidator.getReportById, moderationController.getReportById);
 
-// POST api/moderation/change-report-status/:id - Change report status
-router.post('/change-report-status/:id', moderationValidator.changeReportStatus, moderationController.changeReportStatus);
+// POST api/moderation/change-report-status/:reportId - Change report status
+router.post('/change-report-status/:reportId', moderationValidator.changeReportStatus, moderationController.changeReportStatus);
 
 // GET api/moderation/reported-messages - Get reported messages
 router.get('/reported-messages', moderationController.getReportedMessages);

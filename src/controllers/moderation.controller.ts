@@ -127,6 +127,9 @@ export const muteUser = async (req: IRequestUser, res: Response, next: NextFunct
 
 // Unmute user
 export const unMuteUser = async (req: IRequestUser, res: Response, next: NextFunction) => {
+  const errors = validationResult(req);
+  await validationErrorsUtil(errors, res);
+
   try {
     const {userId} = req.params;
     const {reason} = req.body;
@@ -143,6 +146,9 @@ export const unMuteUser = async (req: IRequestUser, res: Response, next: NextFun
 
 // Ban user
 export const banUser = async (req: IRequestUser, res: Response, next: NextFunction) => {
+  const errors = validationResult(req);
+  await validationErrorsUtil(errors, res);
+
   try {
     const {userId} = req.params;
     const {reason, durationInHours} = req.body;
@@ -159,6 +165,9 @@ export const banUser = async (req: IRequestUser, res: Response, next: NextFuncti
 
 // Unban user
 export const unBanUser = async (req: IRequestUser, res: Response, next: NextFunction) => {
+  const errors = validationResult(req);
+  await validationErrorsUtil(errors, res);
+
   try {
     const {userId} = req.params;
     const {reason} = req.body;
@@ -217,14 +226,18 @@ export const getAllUsersAreBanned = async (req: IRequestUser, res: Response, nex
 
 // Get reports by status
 export const getReports = async (req: IRequestUser, res: Response, next: NextFunction) => {
-  try {
-    const {status} = req.query;
+  const errors = validationResult(req);
+  await validationErrorsUtil(errors, res);
 
-    const reports = await moderationService.getReports(status as string);
+  try {
+    const {status, offset, limit} = req.query;
+
+    const reports = await moderationService.getReports(status as string, parseInt(offset as string), parseInt(limit as string));
 
     return res.status(200).json({
       message: "Signalements récupérés",
-      reports: reports,
+      reports: reports.reports,
+      total: reports.total,
     });
   } catch (err) {
     next(err);
@@ -233,29 +246,27 @@ export const getReports = async (req: IRequestUser, res: Response, next: NextFun
 
 // Search reports by reason, from username, to username, from email, to email, from usernameOnDelete, to usernameOnDelete, from emailOnDelete, to emailOnDelete
 export const searchReports = async (req: IRequestUser, res: Response, next: NextFunction) => {
+  const errors = validationResult(req);
+  await validationErrorsUtil(errors, res);
+
   try {
-    const {query, limit, offset} = req.query;
+    const {search, limit, offset} = req.query;
     const fields: ISearchFields[] = [
       {field: 'reason'},
       {field: 'fromUsername'},
       {field: 'toUsername'},
-      {field: 'fromEmail'},
-      {field: 'toEmail'},
       {field: 'fromUsernameOnDelete'},
       {field: 'toUsernameOnDelete'},
-      {field: 'fromEmailOnDelete'},
-      {field: 'toEmailOnDelete'},
       {field: 'fromUsernameInPreviousUsername'},
       {field: 'toUsernameInPreviousUsername'},
-      {field: 'fromEmailInPreviousEmail'},
-      {field: 'toEmailInPreviousEmail'},
     ];
 
-    const reports = await moderationService.getReportsByMultipleFields(fields, query as string, parseInt(offset as string), parseInt(limit as string));
+    const reports = await moderationService.getReportsByMultipleFields(fields, search as string, parseInt(offset as string), parseInt(limit as string));
 
     return res.status(200).json({
       message: "Signalements récupérés",
-      reports: reports
+      reports: reports.reports,
+      total: reports.total,
     });
   } catch (err) {
     next(err);
@@ -265,9 +276,9 @@ export const searchReports = async (req: IRequestUser, res: Response, next: Next
 // Get report by id
 export const getReportById = async (req: IRequestUser, res: Response, next: NextFunction) => {
   try {
-    const {id} = req.params;
+    const {reportId} = req.params;
 
-    const report = await moderationService.getReportById(id);
+    const report = await moderationService.getReportById(reportId);
 
     return res.status(200).json({
       message: "Signalement récupéré",
@@ -281,10 +292,10 @@ export const getReportById = async (req: IRequestUser, res: Response, next: Next
 // Change report status
 export const changeReportStatus = async (req: IRequestUser, res: Response, next: NextFunction) => {
   try {
-    const {id} = req.params;
+    const {reportId} = req.params;
     const {status} = req.body;
 
-    await moderationService.changeReportStatus(id, status, req.user.id);
+    await moderationService.changeReportStatus(reportId, status, req.user.id);
 
     return res.status(200).json({
       message: "Statut du signalement modifié",
