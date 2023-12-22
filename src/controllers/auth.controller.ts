@@ -20,13 +20,13 @@ export const register = async (req: Request, res: Response, next: NextFunction) 
     // Check if email exists
     const emailExists = await authService.emailExists(email);
     if (emailExists.length > 0) {
-      classicFailOrErrorResponse("L'email est déjà utilisé", 400, res);
+      return classicFailOrErrorResponse("L'email est déjà utilisé", 400, res);
     }
 
     // Check if username exists
     const usernameExists = await authService.usernameExists(username);
     if (usernameExists.length > 0) {
-      classicFailOrErrorResponse("Le nom d'utilisateur est déjà utilisé", 400, res);
+      return classicFailOrErrorResponse("Le nom d'utilisateur est déjà utilisé", 400, res);
     }
 
     const data: IUserCreation = {
@@ -37,14 +37,13 @@ export const register = async (req: Request, res: Response, next: NextFunction) 
     };
 
     // Create user
-    const user = await authService.createUser(data);
+    await authService.createUser(data);
 
     // Send email verification
     await mail.sendMails(email, "Vérification d'email", `<p>Veuillez cliquer sur le lien suivant pour vérifier votre email : <a href="${process.env.CLIENT_URL}/verify-email/${data.verificationCode}" target="_blank">Lien</a></p>`);
 
     return res.status(201).json({
       message: "Utilisateur créé",
-      user: user,
     });
   } catch (err) {
     if (err) {
@@ -62,7 +61,7 @@ export const verifyEmail = async (req: Request, res: Response, next: NextFunctio
     const userVerify = await authService.verifyEmail(verificationCode);
 
     if (!userVerify) {
-      classicFailOrErrorResponse("Code de vérification invalide", 400, res);
+      return classicFailOrErrorResponse("Code de vérification invalide", 400, res);
     }
 
     return res.status(200).json({
@@ -130,7 +129,7 @@ export const forgotPassword = async (req: Request, res: Response, next: NextFunc
     // Check if email exists
     const user = await authService.emailExists(email);
     if (!user) {
-      classicFailOrErrorResponse("L'email n'existe pas", 400, res);
+      return classicFailOrErrorResponse("L'email n'existe pas", 400, res);
     }
 
     // Generate passwordResetCode

@@ -1,5 +1,5 @@
 import { IRequestUser } from "../types/user.type";
-import { Response, NextFunction } from "express";
+import { NextFunction, Response } from "express";
 
 const checkUserRole = (roles: string[]) => {
   return (req: IRequestUser, res: Response, next: NextFunction) => {
@@ -7,8 +7,10 @@ const checkUserRole = (roles: string[]) => {
     if (user && roles.includes(user.role)) {
       next();
     } else {
-      console.log()
-      res.status(401).json({message: 'Unauthorized'});
+      return res.status(403).json({
+        code: 403,
+        message: "Vous n'êtes pas autorisé à accéder à cette ressource",
+      });
     }
   }
 }

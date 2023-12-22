@@ -54,9 +54,9 @@ export const getUser = async (req: IRequestUser, res: Response, next: NextFuncti
   await validationErrorsUtil(errors, res);
 
   try {
-    const {id} = req.params;
+    const {userId} = req.params;
 
-    const user = await moderationService.getUser(id);
+    const user = await moderationService.getUser(userId);
 
     return res.status(200).json({
       message: "Utilisateur récupéré",
@@ -73,10 +73,10 @@ export const warnUser = async (req: IRequestUser, res: Response, next: NextFunct
   await validationErrorsUtil(errors, res);
 
   try {
-    const {id} = req.params;
+    const {userId} = req.params;
     const {reason} = req.body;
 
-    await moderationService.warnUser(id, reason, req.user.id);
+    await moderationService.warnUser(userId, reason, req.user.id);
 
     return res.status(200).json({
       message: "Utilisateur averti",
@@ -87,16 +87,16 @@ export const warnUser = async (req: IRequestUser, res: Response, next: NextFunct
 }
 
 // unWarn user
-export const unWarnUser = async (req: IRequestUser, res: Response, next: NextFunction) => {
+export const unWornUser = async (req: IRequestUser, res: Response, next: NextFunction) => {
   const errors = validationResult(req);
   await validationErrorsUtil(errors, res);
 
   try {
-    const {id} = req.params;
+    const {userId} = req.params;
 
     const {warnId, reason} = req.body;
 
-    await moderationService.unWarnUser(id, warnId, reason, req.user.id);
+    await moderationService.unWornUser(userId, warnId, reason, req.user.id);
 
     return res.status(200).json({
       message: "Avertissement supprimé",

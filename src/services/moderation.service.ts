@@ -105,7 +105,7 @@ export const warnUser = async (userId: string, reason: string, warnerId: string)
   await user.save();
 }
 
-export const unWarnUser = async (userId: string, warnId: string, reason: string, moderatorId: string) => {
+export const unWornUser = async (userId: string, warnId: string, reason: string, moderatorId: string) => {
   const user = await getUserById(userId);
 
   // Check if warn exists

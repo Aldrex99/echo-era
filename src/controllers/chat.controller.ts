@@ -9,7 +9,7 @@ import { classicFailOrErrorResponse } from "../utils/error.util";
 const participantRoleVerify = async (acceptedRole: string[], chat: IGetChat, userId: string, res: Response) => {
   const participant = chat.participants.find(participant => participant.id.toString() === userId);
   if (participant === undefined || !acceptedRole.includes(participant.role)) {
-    classicFailOrErrorResponse("Vous n'êtes pas autorisé à ajouter un utilisateur à ce chat", 403, res);
+    return classicFailOrErrorResponse("Vous n'êtes pas autorisé à ajouter un utilisateur à ce chat", 403, res);
   }
 }
 
@@ -23,22 +23,22 @@ export const createChat = async (req: IRequestUser, res: Response, next: NextFun
 
     // Only admin can create a public chat
     if (type === "public" && req.user.role !== "admin") {
-      classicFailOrErrorResponse("Vous n'êtes pas autorisé à créer un chat public", 403, res);
+      return classicFailOrErrorResponse("Vous n'êtes pas autorisé à créer un chat public", 403, res);
     }
 
     // For group chat, 3 participants minimum
     if (type === "group" && participants.length < 2) {
-      classicFailOrErrorResponse("Un chat de groupe doit avoir au moins 3 participants", 422, res);
+      return classicFailOrErrorResponse("Un chat de groupe doit avoir au moins 3 participants", 422, res);
     }
 
     // Can't create a chat with himself
     if (participants.includes(req.user.id)) {
-      classicFailOrErrorResponse("Vous ne pouvez pas créer un chat avec vous-même", 422, res);
+      return classicFailOrErrorResponse("Vous ne pouvez pas créer un chat avec vous-même", 422, res);
     }
 
     // Can't create a private chat
     if (type === "private") {
-      classicFailOrErrorResponse("Vous ne pouvez pas créer un chat privé", 422, res);
+      return classicFailOrErrorResponse("Vous ne pouvez pas créer un chat privé", 422, res);
     }
 
     // Create chat data
@@ -97,7 +97,7 @@ export const getChatInfo = async (req: IRequestUser, res: Response, next: NextFu
     // Check if user is participant of the chat if it's not a public chat
     const chat = await chatService.getChatInfo(id);
     if (chat.type !== "public" && !chat.participants.find(participant => participant.id.toString() === req.user.id)) {
-      classicFailOrErrorResponse("Vous n'êtes pas autorisé à accéder à ce chat", 403, res);
+      return classicFailOrErrorResponse("Vous n'êtes pas autorisé à accéder à ce chat", 403, res);
     }
 
     // Get chat
@@ -214,7 +214,7 @@ export const updateChatInfo = async (req: IRequestUser, res: Response, next: Nex
 
     // Check if chat type is group
     if (chat.type !== "group") {
-      classicFailOrErrorResponse("Vous n'êtes pas autorisé à modifier ce chat", 403, res);
+      return classicFailOrErrorResponse("Vous n'êtes pas autorisé à modifier ce chat", 403, res);
     }
 
     // Update chat info
@@ -244,7 +244,7 @@ export const updateChatParticipantRole = async (req: IRequestUser, res: Response
 
     const participantToChange = chat.participants.find(participant => participant.id.toString() === userId);
     if (participantToChange === undefined) {
-      classicFailOrErrorResponse("L'utilisateur n'est pas dans le chat", 422, res);
+      return classicFailOrErrorResponse("L'utilisateur n'est pas dans le chat", 422, res);
     }
 
     // Update chat participant role

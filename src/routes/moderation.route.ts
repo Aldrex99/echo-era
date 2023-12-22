@@ -10,14 +10,14 @@ router.get('/users', moderationValidator.getAllUsers, moderationController.getAl
 // GET api/moderation/search-users - Search users by usernames, previousNames, emails, previousEmails, usernameOnDelete, emailOnDelete
 router.get('/search-users', moderationValidator.searchUsers, moderationController.searchUsers);
 
-// GET api/moderation/user/:id - Get user by id
-router.get('/user/:id', moderationValidator.getUser, moderationController.getUser);
+// GET api/moderation/user/:userId - Get user by id
+router.get('/user/:userId', moderationValidator.getUser, moderationController.getUser);
 
-// POST api/moderation/warn/:id - Warn user
-router.post('/warn/:id', moderationValidator.warnUser, moderationController.warnUser);
+// POST api/moderation/warn/:userId - Warn user
+router.post('/warn/:userId', moderationValidator.warnUser, moderationController.warnUser);
 
-// POST api/moderation/unworn/:id - Unwarn user
-router.post('/unworn/:id', moderationValidator.unWarnUser, moderationController.unWarnUser);
+// POST api/moderation/unworn/:userId - Unworn user
+router.post('/unworn/:userId', moderationValidator.unWarnUser, moderationController.unWornUser);
 
 // POST api/moderation/mute/:id - Mute user
 router.post('/mute/:id', moderationValidator.muteUser, moderationController.muteUser);
