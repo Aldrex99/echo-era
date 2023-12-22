@@ -55,7 +55,7 @@ export const unWarnUser = [
 ];
 
 export const muteUser = [
-  param("id")
+  param("userId")
     .exists().withMessage("L'id de l'utilisateur est obligatoire")
     .isMongoId().withMessage("L'id de l'utilisateur n'est pas valide"),
   body("reason")
@@ -67,7 +67,7 @@ export const muteUser = [
 ];
 
 export const unMuteUser = [
-  param("id")
+  param("userId")
     .exists().withMessage("L'id de l'utilisateur est obligatoire")
     .isMongoId().withMessage("L'id de l'utilisateur n'est pas valide"),
   body("reason")
@@ -76,7 +76,7 @@ export const unMuteUser = [
 ];
 
 export const banUser = [
-  param("id")
+  param("userId")
     .exists().withMessage("L'id de l'utilisateur est obligatoire")
     .isMongoId().withMessage("L'id de l'utilisateur n'est pas valide"),
   body("reason")
@@ -88,7 +88,7 @@ export const banUser = [
 ];
 
 export const unBanUser = [
-  param("id")
+  param("userId")
     .exists().withMessage("L'id de l'utilisateur est obligatoire")
     .isMongoId().withMessage("L'id de l'utilisateur n'est pas valide"),
   body("reason")

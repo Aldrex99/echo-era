@@ -113,10 +113,10 @@ export const muteUser = async (req: IRequestUser, res: Response, next: NextFunct
   await validationErrorsUtil(errors, res);
 
   try {
-    const {id} = req.params;
+    const {userId} = req.params;
     const {reason, durationInMin} = req.body;
 
-    await moderationService.muteUser(id, reason, durationInMin, req.user.id);
+    await moderationService.muteUser(userId, reason, durationInMin, req.user.id);
 
     return res.status(200).json({
       message: "Utilisateur muté",
@@ -129,10 +129,10 @@ export const muteUser = async (req: IRequestUser, res: Response, next: NextFunct
 // Unmute user
 export const unMuteUser = async (req: IRequestUser, res: Response, next: NextFunction) => {
   try {
-    const {id} = req.params;
+    const {userId} = req.params;
     const {reason} = req.body;
 
-    await moderationService.unMuteUser(id, req.user.id, reason);
+    await moderationService.unMuteUser(userId, req.user.id, reason);
 
     return res.status(200).json({
       message: "Utilisateur démuté",
@@ -145,10 +145,10 @@ export const unMuteUser = async (req: IRequestUser, res: Response, next: NextFun
 // Ban user
 export const banUser = async (req: IRequestUser, res: Response, next: NextFunction) => {
   try {
-    const {id} = req.params;
+    const {userId} = req.params;
     const {reason, durationInHours} = req.body;
 
-    await moderationService.banUser(id, reason, durationInHours, req.user.id);
+    await moderationService.banUser(userId, reason, durationInHours, req.user.id);
 
     return res.status(200).json({
       message: "Utilisateur banni",
@@ -161,10 +161,10 @@ export const banUser = async (req: IRequestUser, res: Response, next: NextFuncti
 // Unban user
 export const unBanUser = async (req: IRequestUser, res: Response, next: NextFunction) => {
   try {
-    const {id} = req.params;
+    const {userId} = req.params;
     const {reason} = req.body;
 
-    await moderationService.unBanUser(id, req.user.id, reason);
+    await moderationService.unBanUser(userId, req.user.id, reason);
 
     return res.status(200).json({
       message: "Utilisateur débanni",

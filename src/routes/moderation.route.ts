@@ -19,17 +19,17 @@ router.post('/warn/:userId', moderationValidator.warnUser, moderationController.
 // POST api/moderation/unworn/:userId - Unworn user
 router.post('/unworn/:userId', moderationValidator.unWarnUser, moderationController.unWornUser);
 
-// POST api/moderation/mute/:id - Mute user
-router.post('/mute/:id', moderationValidator.muteUser, moderationController.muteUser);
+// POST api/moderation/mute/:userId - Mute user
+router.post('/mute/:userId', moderationValidator.muteUser, moderationController.muteUser);
 
-// POST api/moderation/unmute/:id - Unmute user
-router.post('/unmute/:id', moderationValidator.unMuteUser, moderationController.unMuteUser);
+// POST api/moderation/unmute/:userId - Unmute user
+router.post('/unmute/:userId', moderationValidator.unMuteUser, moderationController.unMuteUser);
 
-// POST api/moderation/ban/:id - Ban user
-router.post('/ban/:id', moderationValidator.banUser, moderationController.banUser);
+// POST api/moderation/ban/:userId - Ban user
+router.post('/ban/:userId', moderationValidator.banUser, moderationController.banUser);
 
-// POST api/moderation/unban/:id - Unban user
-router.post('/unban/:id', moderationValidator.unBanUser, moderationController.unBanUser);
+// POST api/moderation/unban/:userId - Unban user
+router.post('/unban/:userId', moderationValidator.unBanUser, moderationController.unBanUser);
 
 // GET api/moderation/warned-users - Get warned users
 router.get('/warned-users', moderationController.getAllUsersAreWarnings);
