@@ -4,6 +4,20 @@ import Report from "../models/Report.model";
 import { AppError } from "../utils/error.util";
 import { ObjectId } from "mongodb";
 import User from "../models/User.model";
+import { IBlockedUser, IRawMessage } from "../types/message.type";
+
+const replaceMessageContent = (message: IRawMessage[], blockedUsers: IBlockedUser[]) => {
+  return message.map(message => {
+    const blocked = blockedUsers[0].blockedUsers.find(blockedUser => blockedUser.user.toString() === message.sender._id.toString());
+    if (blocked) {
+      message.content = "Utilisateur bloqué";
+    }
+    if (message.deleted) {
+      message.content = "Message supprimé";
+    }
+    return message;
+  });
+}
 
 export const sendMessage = async (senderId: string, chatId: string, content: string) => {
   // Check if chat exists
@@ -15,13 +29,23 @@ export const sendMessage = async (senderId: string, chatId: string, content: str
   // Check if user is in the chat
   const participant = chat.participants.find(participant => participant.user.toString() === senderId);
   if (!participant) {
-    throw new AppError("Vous n'êtes pas dans ce chat", 403);
+    throw new AppError("Vous n'êtes pas dans le chat ou vous essayer d'envoyer un message", 403);
+  }
+
+  // If chat is private, check if user is friend with other participant
+  if (chat.type === 'private') {
+    const friend = await User.findById(chat.participants[0].user.toString(), {friends: 1});
+    const isFriend = friend?.friends.find(friend => friend.friend.toString() === senderId);
+    if (!isFriend) {
+      throw new AppError("Vous n'êtes pas ami avec cette personne", 403);
+    }
   }
 
   const message = new Message({
     sender: senderId,
     chat: chatId,
-    content
+    content,
+    readBy: [new ObjectId(senderId)]
   });
   await message.save();
   return message;
@@ -86,10 +110,6 @@ export const deleteMessage = async (deleteId: string, messageId: string) => {
 }
 
 export const getChatMessages = async (userId: string, chatId: string, limit: number, offset: number) => {
-  if (offset < 1 || limit < 1) {
-    throw new AppError("Les paramètres limit et offset doivent être supérieurs à 0", 422);
-  }
-
   // Check if chat exists
   const chat = await Chat.findById(chatId);
   if (!chat) {
@@ -103,82 +123,80 @@ export const getChatMessages = async (userId: string, chatId: string, limit: num
   }
 
   // Get chat messages
-  const message = await Message.find({chat: chatId}, {
+  const message: IRawMessage[] = await Message.find({chat: chatId}, {
     _id: 1,
     sender: 1,
     chat: 1,
     content: 1,
     date: 1,
     readBy: 1,
-    editHistory: 1
+    editHistory: 1,
+    deleted: 1,
   })
   .sort({date: -1})
-  .skip(offset - 1)
+  .skip(offset * limit)
   .limit(limit)
-  .populate('sender', 'username')
-  .populate('readBy', 'username')
+  .populate('sender', 'username profile.avatar')
+  .populate('readBy', 'username profile.avatar')
   .populate('editHistory.by', 'username');
 
   // Get blocked user ids
-  const blockedUsers = await User.find({_id: userId}, {blockedUsers: 1});
+  const blockedUsers: IBlockedUser[] = await User.find({_id: userId}, {blockedUsers: 1});
 
   // Replace message content by "Utilisateur bloqué" if user is blocked
-  message.forEach(message => {
-    const blocked = blockedUsers[0].blockedUsers.find(blockedUser => blockedUser.user.toString() === message.sender._id.toString());
-    if (blocked) {
-      message.content = "Utilisateur bloqué";
-    }
-    if (message.deleted) {
-      message.content = "Message supprimé";
-    }
-  });
-
-  return message;
+  return {
+    message: replaceMessageContent(message, blockedUsers),
+    total: await Message.countDocuments({chat: chatId})
+  }
 }
 
 export const searchMessages = async (userId: string, chatId: string, search: string, limit: number, offset: number) => {
-  if (offset < 1 || limit < 1) {
-    throw new AppError("Les paramètres limit et offset doivent être supérieurs à 0", 422);
+  const queryConditions = {
+    $and: [{chat: chatId}, {
+      content: {
+        $regex: search,
+        $options: 'i'
+      }
+    }]
   }
-
   // Check if chat exists
   const chat = await Chat.findById(chatId);
   if (!chat) {
     throw new AppError("Le chat n'existe pas", 404);
   }
 
+  // Check if user is in the chat
+  const participant = chat.participants.find(participant => participant.user.toString() === userId);
+  if (!participant) {
+    throw new AppError("Vous n'êtes pas dans ce chat", 403);
+  }
+
   // Search messages
-  const message = await Message.find({$and: [{chat: chatId}, {content: {$regex: search, $options: 'i'}}]}, {
+  const message: IRawMessage[] = await Message.find(queryConditions, {
     _id: 1,
     sender: 1,
     chat: 1,
     content: 1,
     date: 1,
     readBy: 1,
-    editHistory: 1
+    editHistory: 1,
+    deleted: 1,
   })
   .sort({date: -1})
-  .skip(offset - 1)
+  .skip(offset * limit)
   .limit(limit)
-  .populate('sender', 'username')
-  .populate('readBy', 'username')
+  .populate('sender', 'username profile.avatar')
+  .populate('readBy', 'username profile.avatar')
   .populate('editHistory.by', 'username');
 
   // Get blocked user ids
-  const blockedUsers = await User.find({_id: userId}, {blockedUsers: 1});
+  const blockedUsers: IBlockedUser[] = await User.find({_id: userId}, {blockedUsers: 1});
 
   // Replace message content by "Utilisateur bloqué" if user is blocked
-  message.forEach(message => {
-    const blocked = blockedUsers[0].blockedUsers.find(blockedUser => blockedUser.user.toString() === message.sender._id.toString());
-    if (blocked) {
-      message.content = "Utilisateur bloqué";
-    }
-    if (message.deleted) {
-      message.content = "Message supprimé";
-    }
-  });
-
-  return message;
+  return {
+    message: replaceMessageContent(message, blockedUsers),
+    total: await Message.countDocuments(queryConditions)
+  };
 }
 
 export const reportMessage = async (reporterId: string, messageId: string, reason: string) => {
@@ -190,11 +208,6 @@ export const reportMessage = async (reporterId: string, messageId: string, reaso
     throw new AppError("Le message n'existe pas", 404);
   }
 
-  // Check if message is deleted
-  if (message.deleted) {
-    throw new AppError("Le message a été supprimé", 403);
-  }
-
   // Check if user has already reported the message
   const alreadyReported = message.flaggedBy.find(userId => userId.toString() === reporterId);
   if (alreadyReported) {
@@ -204,8 +217,7 @@ export const reportMessage = async (reporterId: string, messageId: string, reaso
   // Report message
   message.flaggedBy.push(new ObjectId(reporterId));
 
-  // Check if message is flagged
-  if (message.flaggedBy.length >= 5) {
+  if (message.moderationStatus === 'none') {
     message.moderationStatus = 'flagged';
   }
 

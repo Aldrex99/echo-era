@@ -10,7 +10,7 @@ const userSchema = new Schema({
     birthday: Date,
     location: String,
   },
-  role: {type: String, default: 'user', enum: ['user', 'moderator', 'admin']},
+  role: {type: String, default: 'user', enum: ['user', 'moderator', 'admin', 'server']},
   previousNames: [{
     username: {type: String, required: true},
     date: {type: Date, default: Date.now},
@@ -25,7 +25,7 @@ const userSchema = new Schema({
   warnings: [{
     reason: {type: String, required: true},
     date: {type: Date, default: Date.now},
-    type: {type: String, required: true},
+    by: {type: Schema.Types.ObjectId, ref: 'User'},
   }],
   isMuted: {type: Boolean, default: false},
   muteDuration: {type: Number, default: 0},
@@ -51,7 +51,7 @@ const userSchema = new Schema({
     user: {type: Schema.Types.ObjectId, ref: 'User'},
     date: {type: Date, default: Date.now},
   }],
-  blockedChat: [{
+  blockedChats: [{
     chat: {type: Schema.Types.ObjectId, ref: 'Chat'},
     date: {type: Date, default: Date.now},
   }],

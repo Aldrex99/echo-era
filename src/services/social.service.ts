@@ -1,42 +1,109 @@
-import { getUsersByMultipleFields } from "./user.service";
-import { userForUser } from "../utils/formatUser.util";
 import User from "../models/User.model";
 import FriendRequest from "../models/FriendRequest.model";
 import Report from "../models/Report.model";
-import { createPrivateChat } from "./chat.service";
+import Chat from "../models/Chat.model";
+import ChatRequest from "../models/ChatRequest.model";
+import { createPrivateChat, leaveChat } from "./chat.service";
 import { AppError } from "../utils/error.util";
+import {
+  IActualUser,
+  IGetBlockedChats,
+  IGetBlockedUsers,
+  IGetFriends,
+  IGetOtherProfile,
+  IGetUser,
+  IReceivedRequests,
+  ISentRequests
+} from "../types/social.type";
 
-export const searchUser = async (query: string, limit: number) => {
-  // Get users
-  const users = await getUsersByMultipleFields([{field: "username"}], query, 0, limit);
+const friendAndBlockedUsersProjection = async (userId: string, users: IGetUser[]) => {
+  // Get users friends and blocked users
+  const actualUser: IActualUser = await User.findOne({_id: userId}, {friends: 1, blockedUsers: 1});
 
-  // Format users
-  return users.result.map((user) => {
-    return userForUser(user);
+  // Add isFriend and isBlocked fields to users
+  const formattedUsers: IGetUser[] = users.map((u) => {
+    return {
+      _id: u._id,
+      username: u.username,
+      profile: u.profile,
+      role: u.role,
+      isFriend: !!actualUser.friends.find((friend) => friend.friend.toString() === u._id.toString()),
+      isBlocked: !!actualUser.blockedUsers.find((blockedUser) => blockedUser.user.toString() === u._id.toString()),
+    };
   });
+
+  return formattedUsers;
 }
 
-export const getOtherProfile = async (id: string) => {
+export const searchUser = async (search: string, limit: number, userId: string) => {
+  const queryConditions = {username: {$regex: search, $options: "i"}}
+  // Get users
+  const users: IGetUser[] = await User.find(queryConditions, {
+    _id: 1,
+    username: 1,
+    profile: 1,
+    role: 1
+  }).limit(limit);
+
+  // Remove actual user from users
+  const userIsInUsers = users.findIndex((u) => u._id.toString() === userId);
+  if (userIsInUsers === 0) {
+    users.splice(users.findIndex((u) => u._id.toString() === userId), 1);
+  }
+
+  // Add isFriend and isBlocked fields to users
+  const formattedUser: IGetUser[] = await friendAndBlockedUsersProjection(userId, users);
+
+  return {
+    users: formattedUser,
+    total: userIsInUsers === 0 ? await User.countDocuments(queryConditions) - 1 : await User.countDocuments(queryConditions),
+  };
+}
+
+export const getOtherProfile = async (id: string, userId: string) => {
   // Get user
-  const user = await User.findOne({_id: id});
+  const user: IGetOtherProfile = await User.findOne({_id: id}, {
+    _id: 1,
+    username: 1,
+    profile: 1,
+    role: 1,
+    friends: 1,
+    blockedUsers: 1,
+  });
+
+  // If user does not exist
+  if (!user) {
+    throw new AppError("Cet utilisateur n'existe pas", 404);
+  }
+
+  // Get friends requests
+  const friendRequestSendTo = await FriendRequest.findOne({from: userId, to: id});
+  const friendRequestReceiveFrom = await FriendRequest.findOne({from: id, to: userId});
 
   // Format user
-  return userForUser(user);
+  const formattedUser: IGetOtherProfile = {
+    _id: user._id,
+    username: user.username,
+    profile: user.profile,
+    role: user.role,
+    isFriend: !!user.friends.find((friend) => friend.friend.toString() === userId),
+    isBlocked: !!user.blockedUsers.find((blockedUser) => blockedUser.user.toString() === userId),
+    friendRequestSent: friendRequestSendTo?._id.toString() || false,
+    friendRequestReceived: friendRequestReceiveFrom?._id.toString() || false,
+  };
+
+  return formattedUser;
 }
 
 export const getFriends = async (userId: string) => {
   // Get user
-  const user = await User.findOne({_id: userId}, {friends: 1});
+  const friends: IGetFriends = await User.findOne({_id: userId}, {friends: 1}).populate("friends.friend", 'username _id');
 
-  // Get friends
-  const friends = await Promise.all(
-    user.friends.map((friend) => User.findOne({_id: friend.friend}, {_id: 1, username: 1}))
-  );
-
-  return friends.map((friend) => {
+  // Format friends
+  return friends.friends.map((friend) => {
     return {
-      id: friend._id,
-      username: friend.username,
+      _id: friend.friend._id,
+      username: friend.friend.username
     };
   });
 }
@@ -57,7 +124,7 @@ export const addFriend = async (userId: string, id: string) => {
   // Check if request already exists
   const request = await FriendRequest.findOne({$or: [{from: userId, to: id}, {from: id, to: userId}]});
   if (request) {
-    throw new AppError("Une demande a déjà été envoyée", 422);
+    throw new AppError("Vous avez déjà reçus ou envoyé une demande", 422);
   }
 
   // Create request
@@ -76,20 +143,30 @@ export const addFriend = async (userId: string, id: string) => {
 
 export const getFriendRequests = async (userId: string) => {
   // Retrieve friend requests
-  const requests = await FriendRequest.find({to: userId});
+  const receivedRequests: IReceivedRequests[] = await FriendRequest.find({to: userId}).populate("from", "username");
+  const sentRequests: ISentRequests[] = await FriendRequest.find({from: userId}).populate("to", "username");
 
-  // Retrieve usernames of the request senders and wait for the results
-  const fromUsers = await Promise.all(
-    requests.map(request => User.findOne({_id: request.from}, {username: 1, date: 1}))
-  );
-
-  // Format the requests
-  return requests.map((request, index) => {
+  // Format requests
+  const formattedRequests = receivedRequests.map((request) => {
     return {
-      id: request._id,
-      from: fromUsers[index] ? fromUsers[index].username : null,
+      _id: request._id,
+      from: request.from,
+      date: request.date,
     };
   });
+
+  const formattedSentRequests = sentRequests.map((request) => {
+    return {
+      _id: request._id,
+      to: request.to,
+      date: request.date,
+    };
+  });
+
+  return {
+    receivedRequests: formattedRequests,
+    sentRequests: formattedSentRequests,
+  };
 };
 
 export const acceptFriendRequest = async (userId: string, requestId: string) => {
@@ -165,7 +242,7 @@ export const removeFriend = async (userId: string, friendId: string) => {
   // Remove friend from the user's friend list
   await User.updateOne({_id: userId}, {$pull: {friends: {friend: friendId}}});
 
-  // Optionally, remove the user from the friend's friend list
+  // Remove the user from the friend's friend list
   await User.updateOne({_id: friendId}, {$pull: {friends: {friend: userId}}});
 
   // Return a message or some confirmation
@@ -234,22 +311,84 @@ export const unblockUser = async (userId: string, id: string) => {
 
 export const getBlockedUsers = async (userId: string) => {
   // Get user block list
-  const blockedUsers = await User.findOne({_id: userId}, {blockedUsers: 1});
+  const blockedUsers: IGetBlockedUsers = await User.findOne({_id: userId}, {blockedUsers: 1}).populate("blockedUsers.user", "username _id");
 
-  // Get blocked users
-  const users = await Promise.all(
-    blockedUsers.blockedUsers.map((user) => User.findOne({_id: user.user}))
-  );
-
-  // Format users
-  return users.map((user) => {
-    return userForUser(user);
+  // Format blocked users
+  return blockedUsers.blockedUsers.map((user) => {
+    return {
+      _id: user.user._id,
+      username: user.user.username,
+    };
   });
 }
 
-export const reportUser = async (userId: string, id: string, messageId: string, reason: string) => {
+export const blockChat = async (userId: string, chatId: string) => {
+  // Retrieve chat
+  const chat = await Chat.findOne({_id: chatId});
+
+  // If the chat does not exist
+  if (!chat) {
+    throw new AppError("Ce chat n'existe pas", 404);
+  }
+
+  // If the user is in the chat leave the chat
+  if (chat.participants.find((participant) => participant.user.toString() === userId)) {
+    await leaveChat(chatId, userId);
+  }
+
+  // If chat type is private
+  if (chat.type === "private") {
+    throw new AppError("Vous devez bloquer votre ami pour bloquer ce chat", 403);
+  }
+
+  // If chat is already blocked by the user
+  const user = await User.findOne({_id: userId, 'blockedChats.chat': chatId});
+  if (user) {
+    throw new AppError("Ce chat est déjà bloqué", 422);
+  }
+
+  // Remove chat request
+  await ChatRequest.findOneAndDelete({user: userId, chat: chatId});
+
+  // Block chat
+  await User.updateOne({_id: userId}, {$push: {blockedChats: {chat: chatId}}});
+}
+
+export const unblockChat = async (userId: string, chatId: string) => {
+  // Retrieve chat
+  const chat = await Chat.findOne({_id: chatId});
+
+  // If the chat does not exist
+  if (!chat) {
+    throw new AppError("Ce chat n'existe pas", 404);
+  }
+
+  // If chat is not blocked by the user
+  const user = await User.findOne({_id: userId, 'blockedChats.chat': chatId});
+  if (!user) {
+    throw new AppError("Ce chat n'est pas bloqué", 422);
+  }
+
+  // Unblock chat
+  await User.updateOne({_id: userId}, {$pull: {blockedChats: {chat: chatId}}});
+}
+
+export const getBlockedChats = async (userId: string) => {
+  // Get user blocked chats
+  const blockedChats: IGetBlockedChats = await User.findOne({_id: userId}, {blockedChats: 1}).populate("blockedChats.chat", "name _id");
+
+  // Format blocked chats
+  return blockedChats.blockedChats.map((chat) => {
+    return {
+      _id: chat.chat._id,
+      name: chat.chat.name,
+    };
+  });
+}
+
+export const reportUser = async (userId: string, userReportedId: string, reason: string) => {
   // Verify if the user exists
-  const reportedUser = await User.findOne({_id: id});
+  const reportedUser = await User.findOne({_id: userReportedId});
 
   // If the user does not exist
   if (!reportedUser) {
@@ -258,10 +397,9 @@ export const reportUser = async (userId: string, id: string, messageId: string, 
 
   // Create report
   const newReport = new Report({
-    userId: id,
-    reportedBy: userId,
-    messageId,
-    reason,
+    fromUser: userId,
+    toUser: userReportedId,
+    reason: reason,
   });
 
   // Save report

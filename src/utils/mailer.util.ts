@@ -1,4 +1,5 @@
 import nodemailer from 'nodemailer';
+import { AppError } from "./error.util";
 
 export const sendMails = async (receiverEmail: string, object: string, html: string) => {
   const transporter = nodemailer.createTransport({
@@ -20,6 +21,6 @@ export const sendMails = async (receiverEmail: string, object: string, html: str
   try {
     await transporter.sendMail(mailOptions);
   } catch (error) {
-    console.error(error);
+    throw new AppError("Une erreur est survenue lors de l'envoi de l'email", 500)
   }
 };

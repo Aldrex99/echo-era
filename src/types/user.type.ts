@@ -37,7 +37,7 @@ interface IPreviousEmail {
 interface IWarning {
   reason: string;
   date?: Date;
-  type: string;
+  by?: string | ObjectId;
 }
 
 interface ISanctionReason {
@@ -61,7 +61,7 @@ export interface IUserMongo {
   email?: string;
   password?: string;
   profile?: IProfile;
-  role?: 'user' | 'moderator' | 'admin';
+  role?: 'user' | 'moderator' | 'admin' | 'server';
   previousNames?: IPreviousName[];
   previousEmails?: IPreviousEmail[];
   usernameOnDelete?: string;
@@ -88,29 +88,29 @@ export interface IUserMongo {
   deletedAt?: Date;
 }
 
-export interface IPersonalUser {
-  id: string;
-  username?: string;
-  email?: string;
-  profile?: IProfile;
-  role: 'user' | 'moderator' | 'admin';
-  isVerified: boolean;
-  friends: IFriend[];
-  blockedUsers: IBlockedUser[];
-  createdAt: Date;
-  updatedAt: Date;
-  lastLogout: Date;
-}
-
 export interface IPersonalUserUpdate {
   username?: string;
   email?: string;
   profile?: IProfile;
 }
 
-export interface IUserForUser {
+export interface IUserForModeration {
   id: string;
   username?: string;
+  email?: string;
   profile?: IProfile;
-  role: 'user' | 'moderator' | 'admin';
+  role: 'user' | 'moderator' | 'admin' | 'server';
+  previousNames?: IPreviousName[];
+  previousEmails?: IPreviousEmail[];
+  usernameOnDelete?: string;
+  emailOnDelete?: string;
+  isActive?: boolean;
+  warnings?: IWarning[];
+  isMuted?: boolean;
+  muteDuration?: number;
+  muteExpiresAt?: Date;
+  isBanned?: boolean;
+  banDuration?: number;
+  banExpiresAt?: Date;
+  sanctionReason?: ISanctionReason[];
 }

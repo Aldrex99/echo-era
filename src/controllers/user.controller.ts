@@ -1,7 +1,6 @@
 import { NextFunction, Response } from "express";
 import { IRequestUser } from "../types/user.type";
 import * as userService from "../services/user.service";
-import * as formatUser from "../utils/formatUser.util";
 import { validationResult } from "express-validator";
 import { validationErrorsUtil } from "../utils/validationErrors.util";
 
@@ -9,14 +8,11 @@ import { validationErrorsUtil } from "../utils/validationErrors.util";
 export const getProfile = async (req: IRequestUser, res: Response, next: NextFunction) => {
   try {
     // Get user
-    const user = await userService.getUserById(req.user.id);
-
-    // Format user
-    const formattedUser = formatUser.personalUser(user);
+    const user = await userService.getProfile(req.user.id);
 
     return res.status(200).json({
       message: "Utilisateur récupéré",
-      user: formattedUser,
+      user: user,
     });
   } catch (err) {
     if (err) {
@@ -31,18 +27,12 @@ export const updateUser = async (req: IRequestUser, res: Response, next: NextFun
   await validationErrorsUtil(errors, res);
 
   try {
-    // Get user
-    const user = await userService.getUserById(req.user.id);
-
     // Update user
-    const updatedUser = await userService.updateUser(user, req.body);
-
-    // Format user
-    const formattedUser = formatUser.personalUser(updatedUser);
+    const updatedUser = await userService.updateUser(req.user.id, req.body);
 
     return res.status(200).json({
       message: "Utilisateur mis à jour",
-      user: formattedUser,
+      user: updatedUser,
     });
   } catch (err) {
     if (err) {
