@@ -9,7 +9,7 @@ import { classicFailOrErrorResponse } from "../utils/error.util";
 const participantRoleVerify = async (acceptedRole: string[], chat: IGetChat, userId: string, res: Response) => {
   const participant = chat.participants.find(participant => participant.id.toString() === userId);
   if (participant === undefined || !acceptedRole.includes(participant.role)) {
-    classicFailOrErrorResponse("Vous n'êtes pas autorisé à ajouter un utilisateur à ce chat", 403, res);
+    return classicFailOrErrorResponse("Vous n'êtes pas autorisé à ajouter un utilisateur à ce chat", 403, res);
   }
 }
 
@@ -23,22 +23,22 @@ export const createChat = async (req: IRequestUser, res: Response, next: NextFun
 
     // Only admin can create a public chat
     if (type === "public" && req.user.role !== "admin") {
-      classicFailOrErrorResponse("Vous n'êtes pas autorisé à créer un chat public", 403, res);
+      return classicFailOrErrorResponse("Vous n'êtes pas autorisé à créer un chat public", 403, res);
     }
 
     // For group chat, 3 participants minimum
     if (type === "group" && participants.length < 2) {
-      classicFailOrErrorResponse("Un chat de groupe doit avoir au moins 3 participants", 422, res);
+      return classicFailOrErrorResponse("Un chat de groupe doit avoir au moins 3 participants", 422, res);
     }
 
     // Can't create a chat with himself
     if (participants.includes(req.user.id)) {
-      classicFailOrErrorResponse("Vous ne pouvez pas créer un chat avec vous-même", 422, res);
+      return classicFailOrErrorResponse("Vous ne pouvez pas créer un chat avec vous-même", 422, res);
     }
 
     // Can't create a private chat
     if (type === "private") {
-      classicFailOrErrorResponse("Vous ne pouvez pas créer un chat privé", 422, res);
+      return classicFailOrErrorResponse("Vous ne pouvez pas créer un chat privé", 422, res);
     }
 
     // Create chat data
@@ -76,7 +76,8 @@ export const getUserChats = async (req: IRequestUser, res: Response, next: NextF
 
     return res.status(200).json({
       message: "Chats récupérés",
-      chats,
+      chats: chats.chats,
+      total: chats.total,
     });
   } catch (err) {
     if (err) {
@@ -96,7 +97,7 @@ export const getChatInfo = async (req: IRequestUser, res: Response, next: NextFu
     // Check if user is participant of the chat if it's not a public chat
     const chat = await chatService.getChatInfo(id);
     if (chat.type !== "public" && !chat.participants.find(participant => participant.id.toString() === req.user.id)) {
-      classicFailOrErrorResponse("Vous n'êtes pas autorisé à accéder à ce chat", 403, res);
+      return classicFailOrErrorResponse("Vous n'êtes pas autorisé à accéder à ce chat", 403, res);
     }
 
     // Get chat
@@ -147,7 +148,7 @@ export const getChatRequests = async (req: IRequestUser, res: Response, next: Ne
     const requests = await chatService.getChatRequests(req.user.id);
 
     return res.status(200).json({
-      message: "Demandes d'amis récupérées",
+      message: "Demandes de chat récupérées",
       requests: requests,
     });
   } catch (err) {
@@ -163,7 +164,7 @@ export const acceptChatRequest = async (req: IRequestUser, res: Response, next: 
   await validationErrorsUtil(errors, res);
 
   try {
-    const {requestId} = req.body;
+    const {requestId} = req.params;
 
     // Accept chat invitation
     await chatService.acceptChatRequest(requestId, req.user.id);
@@ -184,7 +185,7 @@ export const declineChatRequest = async (req: IRequestUser, res: Response, next:
   await validationErrorsUtil(errors, res);
 
   try {
-    const {requestId} = req.body;
+    const {requestId} = req.params;
 
     // Decline chat invitation
     await chatService.declineChatRequest(requestId, req.user.id);
@@ -205,14 +206,19 @@ export const updateChatInfo = async (req: IRequestUser, res: Response, next: Nex
   await validationErrorsUtil(errors, res);
 
   try {
-    const {id} = req.params;
+    const {chatId} = req.params;
 
     // Check if user is admin or moderator of the chat
-    const chat = await chatService.getChatInfo(id);
+    const chat = await chatService.getChatInfo(chatId);
     await participantRoleVerify(["admin", "moderator"], chat, req.user.id, res);
 
+    // Check if chat type is group
+    if (chat.type !== "group") {
+      return classicFailOrErrorResponse("Vous n'êtes pas autorisé à modifier ce chat", 403, res);
+    }
+
     // Update chat info
-    await chatService.updateChatInfo(id, req.body);
+    await chatService.updateChatInfo(chatId, req.body);
 
     return res.status(200).json({
       message: "Informations du chat mises à jour",
@@ -230,19 +236,19 @@ export const updateChatParticipantRole = async (req: IRequestUser, res: Response
   await validationErrorsUtil(errors, res);
 
   try {
-    const {id} = req.params;
+    const {chatId, userId} = req.params;
 
     // Check if user is admin of the chat
-    const chat = await chatService.getChatInfo(id);
+    const chat = await chatService.getChatInfo(chatId);
     await participantRoleVerify(["admin"], chat, req.user.id, res);
 
-    const participantToChange = chat.participants.find(participant => participant.id.toString() === req.body.userId);
+    const participantToChange = chat.participants.find(participant => participant.id.toString() === userId);
     if (participantToChange === undefined) {
-      classicFailOrErrorResponse("L'utilisateur n'est pas dans le chat", 422, res);
+      return classicFailOrErrorResponse("L'utilisateur n'est pas dans le chat", 422, res);
     }
 
     // Update chat participant role
-    await chatService.updateChatParticipantRole(id, req.body.userId, req.body.role);
+    await chatService.updateChatParticipantRole(chatId, userId, req.body.role);
 
     return res.status(200).json({
       message: "Rôle du participant mis à jour",
@@ -260,20 +266,14 @@ export const removeUserFromChat = async (req: IRequestUser, res: Response, next:
   await validationErrorsUtil(errors, res);
 
   try {
-    const {id} = req.params;
+    const {chatId, userId} = req.params;
 
     // Check if user is admin or moderator of the chat
-    const chat = await chatService.getChatInfo(id);
+    const chat = await chatService.getChatInfo(chatId);
     await participantRoleVerify(["admin", "moderator"], chat, req.user.id, res);
 
-    // Check if user is in the chat
-    const participantToRemove = chat.participants.find(participant => participant.id.toString() === req.body.userId);
-    if (participantToRemove === undefined) {
-      classicFailOrErrorResponse("L'utilisateur n'est pas dans le chat", 422, res);
-    }
-
     // Remove user from chat
-    await chatService.removeUserFromChat(id, req.body.userId);
+    await chatService.removeUserFromChat(chatId, userId, req.user.id);
 
     return res.status(200).json({
       message: "Utilisateur supprimé du chat",
@@ -291,10 +291,10 @@ export const leaveChat = async (req: IRequestUser, res: Response, next: NextFunc
   await validationErrorsUtil(errors, res);
 
   try {
-    const {id} = req.params;
+    const {chatId} = req.params;
 
     // Leave chat
-    await chatService.leaveChat(id, req.user.id);
+    await chatService.leaveChat(chatId, req.user.id);
 
     return res.status(200).json({
       message: "Vous avez quitté le chat",
@@ -312,14 +312,14 @@ export const deleteChat = async (req: IRequestUser, res: Response, next: NextFun
   await validationErrorsUtil(errors, res);
 
   try {
-    const {id} = req.params;
+    const {chatId} = req.params;
 
     // Check if user is admin of the chat
-    const chat = await chatService.getChatInfo(id);
+    const chat = await chatService.getChatInfo(chatId);
     await participantRoleVerify(["admin"], chat, req.user.id, res);
 
     // Delete chat
-    await chatService.deleteChat(id);
+    await chatService.deleteChat(chatId, req.user.id);
 
     return res.status(200).json({
       message: "Chat supprimé",
@@ -337,14 +337,15 @@ export const searchChats = async (req: IRequestUser, res: Response, next: NextFu
   await validationErrorsUtil(errors, res);
 
   try {
-    const {query, limit, offset} = req.query;
+    const {search} = req.query;
 
     // Get chats
-    const chats = await chatService.searchChats(req.user.id, query as string, parseInt(limit as string), parseInt(offset as string));
+    const chats = await chatService.searchChats(req.user.id, search as string);
 
     return res.status(200).json({
       message: "Chats récupérés",
-      chats,
+      chats: chats.chats,
+      total: chats.total,
     });
   } catch (err) {
     if (err) {

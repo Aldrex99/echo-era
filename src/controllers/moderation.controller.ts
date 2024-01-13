@@ -1,24 +1,26 @@
-import { Response, NextFunction } from "express";
+import { NextFunction, Response } from "express";
 import { IRequestUser } from "../types/user.type";
 import * as moderationService from '../services/moderation.service';
-import { getUsersByMultipleFields } from "../services/user.service";
 import { ISearchFields } from "../types/global.type";
-import { userForModeration } from "../utils/formatUser.util";
 import { validationResult } from "express-validator";
 import { validationErrorsUtil } from "../utils/validationErrors.util";
 
 // Get all users
 export const getAllUsers = async (req: IRequestUser, res: Response, next: NextFunction) => {
-  try {
-    const users = await moderationService.getAllUsers();
+  const errors = validationResult(req);
+  await validationErrorsUtil(errors, res);
 
-    const formattedUsers = users.map((user) => {
-      return userForModeration(user);
-    });
+  try {
+    const {limit, offset, sort = 'username', direction = 'asc'} = req.query;
+
+    const order = direction === 'asc' ? 1 : -1;
+
+    const users = await moderationService.getAllUsers(parseInt(offset as string), parseInt(limit as string), sort as string, order);
 
     return res.status(200).json({
       message: "Utilisateurs récupérés",
-      users: formattedUsers,
+      users: users.users,
+      total: users.total,
     });
   } catch (err) {
     next(err);
@@ -31,26 +33,14 @@ export const searchUsers = async (req: IRequestUser, res: Response, next: NextFu
   await validationErrorsUtil(errors, res);
 
   try {
-    const {query, limit, offset} = req.query;
-    const fields: ISearchFields[] = [
-      {field: 'username'},
-      {field: {field: 'previousNames', elemMatch: 'username'}},
-      {field: 'email'},
-      {field: {field: 'previousEmails', elemMatch: 'email'}},
-      {field: 'usernameOnDelete'},
-      {field: 'emailOnDelete'},
-    ];
+    const {search, limit, offset} = req.query;
 
-
-    const users = await getUsersByMultipleFields(fields, query as string, parseInt(offset as string), parseInt(limit as string));
-
-    const formattedUsers = users.result.map((user) => {
-      return userForModeration(user);
-    });
+    const users = await moderationService.searchUsers(search as string, parseInt(offset as string), parseInt(limit as string));
 
     return res.status(200).json({
       message: "Utilisateurs récupérés",
-      users: formattedUsers,
+      users: users.users,
+      total: users.total,
     });
   } catch (err) {
     next(err);
@@ -58,20 +48,18 @@ export const searchUsers = async (req: IRequestUser, res: Response, next: NextFu
 }
 
 // Get user by id
-export const getUserById = async (req: IRequestUser, res: Response, next: NextFunction) => {
+export const getUser = async (req: IRequestUser, res: Response, next: NextFunction) => {
   const errors = validationResult(req);
   await validationErrorsUtil(errors, res);
 
   try {
-    const {id} = req.params;
+    const {userId} = req.params;
 
-    const user = await moderationService.getUserById(id);
-
-    const formattedUser = userForModeration(user);
+    const user = await moderationService.getUser(userId);
 
     return res.status(200).json({
       message: "Utilisateur récupéré",
-      user: formattedUser,
+      user: user,
     });
   } catch (err) {
     next(err);
@@ -84,10 +72,10 @@ export const warnUser = async (req: IRequestUser, res: Response, next: NextFunct
   await validationErrorsUtil(errors, res);
 
   try {
-    const {id} = req.params;
+    const {userId} = req.params;
     const {reason} = req.body;
 
-    await moderationService.warnUser(id, reason, req.user.id);
+    await moderationService.warnUser(userId, reason, req.user.id);
 
     return res.status(200).json({
       message: "Utilisateur averti",
@@ -98,16 +86,16 @@ export const warnUser = async (req: IRequestUser, res: Response, next: NextFunct
 }
 
 // unWarn user
-export const unWarnUser = async (req: IRequestUser, res: Response, next: NextFunction) => {
+export const unWornUser = async (req: IRequestUser, res: Response, next: NextFunction) => {
   const errors = validationResult(req);
   await validationErrorsUtil(errors, res);
 
   try {
-    const {id} = req.params;
+    const {userId} = req.params;
 
     const {warnId, reason} = req.body;
 
-    await moderationService.unWarnUser(id, warnId, reason, req.user.id);
+    await moderationService.unWornUser(userId, warnId, reason, req.user.id);
 
     return res.status(200).json({
       message: "Avertissement supprimé",
@@ -124,10 +112,10 @@ export const muteUser = async (req: IRequestUser, res: Response, next: NextFunct
   await validationErrorsUtil(errors, res);
 
   try {
-    const {id} = req.params;
+    const {userId} = req.params;
     const {reason, durationInMin} = req.body;
 
-    await moderationService.muteUser(id, reason, durationInMin, req.user.id);
+    await moderationService.muteUser(userId, reason, durationInMin, req.user.id);
 
     return res.status(200).json({
       message: "Utilisateur muté",
@@ -139,11 +127,14 @@ export const muteUser = async (req: IRequestUser, res: Response, next: NextFunct
 
 // Unmute user
 export const unMuteUser = async (req: IRequestUser, res: Response, next: NextFunction) => {
+  const errors = validationResult(req);
+  await validationErrorsUtil(errors, res);
+
   try {
-    const {id} = req.params;
+    const {userId} = req.params;
     const {reason} = req.body;
 
-    await moderationService.unMuteUser(id, req.user.id, reason);
+    await moderationService.unMuteUser(userId, req.user.id, reason);
 
     return res.status(200).json({
       message: "Utilisateur démuté",
@@ -155,11 +146,14 @@ export const unMuteUser = async (req: IRequestUser, res: Response, next: NextFun
 
 // Ban user
 export const banUser = async (req: IRequestUser, res: Response, next: NextFunction) => {
+  const errors = validationResult(req);
+  await validationErrorsUtil(errors, res);
+
   try {
-    const {id} = req.params;
+    const {userId} = req.params;
     const {reason, durationInHours} = req.body;
 
-    await moderationService.banUser(id, reason, durationInHours, req.user.id);
+    await moderationService.banUser(userId, reason, durationInHours, req.user.id);
 
     return res.status(200).json({
       message: "Utilisateur banni",
@@ -171,11 +165,14 @@ export const banUser = async (req: IRequestUser, res: Response, next: NextFuncti
 
 // Unban user
 export const unBanUser = async (req: IRequestUser, res: Response, next: NextFunction) => {
+  const errors = validationResult(req);
+  await validationErrorsUtil(errors, res);
+
   try {
-    const {id} = req.params;
+    const {userId} = req.params;
     const {reason} = req.body;
 
-    await moderationService.unBanUser(id, req.user.id, reason);
+    await moderationService.unBanUser(userId, req.user.id, reason);
 
     return res.status(200).json({
       message: "Utilisateur débanni",
@@ -190,13 +187,9 @@ export const getAllUsersAreWarnings = async (req: IRequestUser, res: Response, n
   try {
     const users = await moderationService.getAllUsersAreWarnings();
 
-    const formattedUsers = users.map((user) => {
-      return userForModeration(user);
-    });
-
     return res.status(200).json({
       message: "Utilisateurs récupérés",
-      users: formattedUsers,
+      users: users,
     });
   } catch (err) {
     next(err);
@@ -208,13 +201,9 @@ export const getAllUsersAreMuted = async (req: IRequestUser, res: Response, next
   try {
     const users = await moderationService.getAllUsersAreMuted();
 
-    const formattedUsers = users.map((user) => {
-      return userForModeration(user);
-    });
-
     return res.status(200).json({
       message: "Utilisateurs récupérés",
-      users: formattedUsers,
+      users: users,
     });
   } catch (err) {
     next(err);
@@ -226,13 +215,9 @@ export const getAllUsersAreBanned = async (req: IRequestUser, res: Response, nex
   try {
     const users = await moderationService.getAllUsersAreBanned();
 
-    const formattedUsers = users.map((user) => {
-      return userForModeration(user);
-    });
-
     return res.status(200).json({
       message: "Utilisateurs récupérés",
-      users: formattedUsers,
+      users: users,
     });
   } catch (err) {
     next(err);
@@ -241,14 +226,18 @@ export const getAllUsersAreBanned = async (req: IRequestUser, res: Response, nex
 
 // Get reports by status
 export const getReports = async (req: IRequestUser, res: Response, next: NextFunction) => {
-  try {
-    const {status} = req.query;
+  const errors = validationResult(req);
+  await validationErrorsUtil(errors, res);
 
-    const reports = await moderationService.getReports(status as string);
+  try {
+    const {status, offset, limit} = req.query;
+
+    const reports = await moderationService.getReports(status as string, parseInt(offset as string), parseInt(limit as string));
 
     return res.status(200).json({
       message: "Signalements récupérés",
-      reports: reports,
+      reports: reports.reports,
+      total: reports.total,
     });
   } catch (err) {
     next(err);
@@ -257,29 +246,27 @@ export const getReports = async (req: IRequestUser, res: Response, next: NextFun
 
 // Search reports by reason, from username, to username, from email, to email, from usernameOnDelete, to usernameOnDelete, from emailOnDelete, to emailOnDelete
 export const searchReports = async (req: IRequestUser, res: Response, next: NextFunction) => {
+  const errors = validationResult(req);
+  await validationErrorsUtil(errors, res);
+
   try {
-    const {query, limit, offset} = req.query;
+    const {search, limit, offset} = req.query;
     const fields: ISearchFields[] = [
       {field: 'reason'},
       {field: 'fromUsername'},
       {field: 'toUsername'},
-      {field: 'fromEmail'},
-      {field: 'toEmail'},
       {field: 'fromUsernameOnDelete'},
       {field: 'toUsernameOnDelete'},
-      {field: 'fromEmailOnDelete'},
-      {field: 'toEmailOnDelete'},
       {field: 'fromUsernameInPreviousUsername'},
       {field: 'toUsernameInPreviousUsername'},
-      {field: 'fromEmailInPreviousEmail'},
-      {field: 'toEmailInPreviousEmail'},
     ];
 
-    const reports = await moderationService.getReportsByMultipleFields(fields, query as string, parseInt(offset as string), parseInt(limit as string));
+    const reports = await moderationService.getReportsByMultipleFields(fields, search as string, parseInt(offset as string), parseInt(limit as string));
 
     return res.status(200).json({
       message: "Signalements récupérés",
-      reports: reports
+      reports: reports.reports,
+      total: reports.total,
     });
   } catch (err) {
     next(err);
@@ -289,9 +276,9 @@ export const searchReports = async (req: IRequestUser, res: Response, next: Next
 // Get report by id
 export const getReportById = async (req: IRequestUser, res: Response, next: NextFunction) => {
   try {
-    const {id} = req.params;
+    const {reportId} = req.params;
 
-    const report = await moderationService.getReportById(id);
+    const report = await moderationService.getReportById(reportId);
 
     return res.status(200).json({
       message: "Signalement récupéré",
@@ -305,10 +292,10 @@ export const getReportById = async (req: IRequestUser, res: Response, next: Next
 // Change report status
 export const changeReportStatus = async (req: IRequestUser, res: Response, next: NextFunction) => {
   try {
-    const {id} = req.params;
+    const {reportId} = req.params;
     const {status} = req.body;
 
-    await moderationService.changeReportStatus(id, status, req.user.id);
+    await moderationService.changeReportStatus(reportId, status, req.user.id);
 
     return res.status(200).json({
       message: "Statut du signalement modifié",

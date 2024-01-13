@@ -1,23 +1,24 @@
-import { NextFunction, Request, Response } from 'express'
-import { IRequestUser, IUserForUser } from '../types/user.type'
+import { NextFunction, Response } from 'express'
+import { IRequestUser } from '../types/user.type'
 import { validationResult } from "express-validator";
 import { validationErrorsUtil } from "../utils/validationErrors.util";
 import * as socialService from "../services/social.service";
 
 // Search users by username
-export const searchUsers = async (req: Request, res: Response, next: NextFunction) => {
+export const searchUsers = async (req: IRequestUser, res: Response, next: NextFunction) => {
   const errors = validationResult(req);
   await validationErrorsUtil(errors, res);
 
   try {
-    const {query, limit} = req.query;
+    const {search, limit} = req.query;
 
     // Get users
-    const users: IUserForUser[] = await socialService.searchUser(query as string, parseInt(limit as string));
+    const users = await socialService.searchUser(search as string, parseInt(limit as string), req.user.id);
 
     return res.status(200).json({
       message: "Utilisateurs récupérés",
-      users: users,
+      users: users.users,
+      total: users.total,
     });
   } catch (err) {
     if (err) {
@@ -27,15 +28,15 @@ export const searchUsers = async (req: Request, res: Response, next: NextFunctio
 }
 
 // Get other user profile
-export const getOtherProfile = async (req: Request, res: Response, next: NextFunction) => {
+export const getOtherProfile = async (req: IRequestUser, res: Response, next: NextFunction) => {
   const errors = validationResult(req);
   await validationErrorsUtil(errors, res);
 
   try {
-    const {id} = req.params;
+    const {otherUserId} = req.params;
 
     // Get user
-    const user: IUserForUser = await socialService.getOtherProfile(id);
+    const user = await socialService.getOtherProfile(otherUserId, req.user.id);
 
     return res.status(200).json({
       message: "Utilisateur récupéré",
@@ -71,10 +72,10 @@ export const addFriend = async (req: IRequestUser, res: Response, next: NextFunc
   await validationErrorsUtil(errors, res);
 
   try {
-    const {id} = req.body;
+    const {receiverId} = req.params;
 
     // Add friends
-    await socialService.addFriend(req.user.id, id);
+    await socialService.addFriend(req.user.id, receiverId);
 
     return res.status(200).json({
       message: "Demande d'ami envoyée",
@@ -109,10 +110,10 @@ export const acceptFriendRequest = async (req: IRequestUser, res: Response, next
   await validationErrorsUtil(errors, res);
 
   try {
-    const {id} = req.body;
+    const {requestId} = req.params;
 
     // Accept friend request
-    await socialService.acceptFriendRequest(req.user.id, id);
+    await socialService.acceptFriendRequest(req.user.id, requestId);
 
     return res.status(200).json({
       message: "Demande d'ami acceptée",
@@ -130,10 +131,10 @@ export const declineFriendRequest = async (req: IRequestUser, res: Response, nex
   await validationErrorsUtil(errors, res);
 
   try {
-    const {id} = req.body;
+    const {requestId} = req.params;
 
     // Decline friend request
-    await socialService.declineFriendRequest(req.user.id, id);
+    await socialService.declineFriendRequest(req.user.id, requestId);
 
     return res.status(200).json({
       message: "Demande d'ami refusée",
@@ -151,10 +152,10 @@ export const cancelFriendRequest = async (req: IRequestUser, res: Response, next
   await validationErrorsUtil(errors, res);
 
   try {
-    const {id} = req.body;
+    const {requestId} = req.params;
 
     // Cancel friend request
-    await socialService.cancelFriendRequest(req.user.id, id);
+    await socialService.cancelFriendRequest(req.user.id, requestId);
 
     return res.status(200).json({
       message: "Demande d'ami annulée",
@@ -172,10 +173,10 @@ export const removeFriend = async (req: IRequestUser, res: Response, next: NextF
   await validationErrorsUtil(errors, res);
 
   try {
-    const {id} = req.body;
+    const {friendId} = req.params;
 
     // Remove friends
-    await socialService.removeFriend(req.user.id, id);
+    await socialService.removeFriend(req.user.id, friendId);
 
     return res.status(200).json({
       message: "Ami supprimé",
@@ -193,10 +194,10 @@ export const blockUser = async (req: IRequestUser, res: Response, next: NextFunc
   await validationErrorsUtil(errors, res);
 
   try {
-    const {id} = req.body;
+    const {otherUserId} = req.params;
 
     // Block user
-    await socialService.blockUser(req.user.id, id);
+    await socialService.blockUser(req.user.id, otherUserId);
 
     return res.status(200).json({
       message: "Utilisateur bloqué",
@@ -214,10 +215,10 @@ export const unblockUser = async (req: IRequestUser, res: Response, next: NextFu
   await validationErrorsUtil(errors, res);
 
   try {
-    const {id} = req.body;
+    const {blockedId} = req.params;
 
     // Unblock user
-    await socialService.unblockUser(req.user.id, id);
+    await socialService.unblockUser(req.user.id, blockedId);
 
     return res.status(200).json({
       message: "Utilisateur débloqué",
@@ -246,16 +247,70 @@ export const getBlockedUsers = async (req: IRequestUser, res: Response, next: Ne
   }
 }
 
+// Block chat
+export const blockChat = async (req: IRequestUser, res: Response, next: NextFunction) => {
+  try {
+    const {chatId} = req.params;
+
+    // Block chat
+    await socialService.blockChat(req.user.id, chatId);
+
+    return res.status(200).json({
+      message: "Chat bloqué",
+    });
+  } catch (err) {
+    if (err) {
+      return next(err);
+    }
+  }
+}
+
+// Unblock chat
+export const unblockChat = async (req: IRequestUser, res: Response, next: NextFunction) => {
+  try {
+    const {chatId} = req.params;
+
+    // Unblock chat
+    await socialService.unblockChat(req.user.id, chatId);
+
+    return res.status(200).json({
+      message: "Chat débloqué",
+    });
+  } catch (err) {
+    if (err) {
+      return next(err);
+    }
+  }
+}
+
+// Get blocked chats
+export const getBlockedChats = async (req: IRequestUser, res: Response, next: NextFunction) => {
+  try {
+    // Get blocked chats
+    const blockedChats = await socialService.getBlockedChats(req.user.id);
+
+    return res.status(200).json({
+      message: "Chats bloqués récupérés",
+      blockedChats: blockedChats,
+    });
+  } catch (err) {
+    if (err) {
+      return next(err);
+    }
+  }
+}
+
 // Report user
 export const reportUser = async (req: IRequestUser, res: Response, next: NextFunction) => {
   const errors = validationResult(req);
   await validationErrorsUtil(errors, res);
 
   try {
-    const {id, messageId, reason} = req.body;
+    const {otherUserId} = req.params;
+    const {reason} = req.body;
 
     // Report user
-    await socialService.reportUser(req.user.id, id, messageId, reason);
+    await socialService.reportUser(req.user.id, otherUserId, reason);
 
     return res.status(200).json({
       message: "Utilisateur signalé",

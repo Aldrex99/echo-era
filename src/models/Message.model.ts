@@ -15,7 +15,7 @@ const messageSchema = new Schema({
     date: {type: Date, default: Date.now},
     content: {type: String},
     by: {type: Schema.Types.ObjectId, ref: 'User'},
-    role: {type: String, enum: ['sender', 'moderator']}
+    role: {type: String, enum: ['sender', 'moderator', 'chatOwner']}
   }]
 });
 

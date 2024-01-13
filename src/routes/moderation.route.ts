@@ -4,32 +4,32 @@ import * as moderationValidator from "../validators/moderation.validator";
 
 const router: Router = Router();
 
-// GET api/moderation/users - Get all users
-router.get('/users', moderationController.getAllUsers);
+// GET api/moderation/users?limit=1&offset=0 - Get all users
+router.get('/users', moderationValidator.getAllUsers, moderationController.getAllUsers);
 
 // GET api/moderation/search-users - Search users by usernames, previousNames, emails, previousEmails, usernameOnDelete, emailOnDelete
 router.get('/search-users', moderationValidator.searchUsers, moderationController.searchUsers);
 
-// GET api/moderation/user/:id - Get user by id
-router.get('/user/:id', moderationValidator.getUserById, moderationController.getUserById);
+// GET api/moderation/user/:userId - Get user by id
+router.get('/user/:userId', moderationValidator.getUser, moderationController.getUser);
 
-// POST api/moderation/warn/:id - Warn user
-router.post('/warn/:id', moderationValidator.warnUser, moderationController.warnUser);
+// POST api/moderation/warn/:userId - Warn user
+router.post('/warn/:userId', moderationValidator.warnUser, moderationController.warnUser);
 
-// POST api/moderation/unwarn/:id - Unwarn user
-router.post('/unwarn/:id', moderationValidator.unWarnUser, moderationController.unWarnUser);
+// POST api/moderation/unworn/:userId - Unworn user
+router.post('/unworn/:userId', moderationValidator.unWarnUser, moderationController.unWornUser);
 
-// POST api/moderation/mute/:id - Mute user
-router.post('/mute/:id', moderationValidator.muteUser, moderationController.muteUser);
+// POST api/moderation/mute/:userId - Mute user
+router.post('/mute/:userId', moderationValidator.muteUser, moderationController.muteUser);
 
-// POST api/moderation/unmute/:id - Unmute user
-router.post('/unmute/:id', moderationValidator.unMuteUser, moderationController.unMuteUser);
+// POST api/moderation/unmute/:userId - Unmute user
+router.post('/unmute/:userId', moderationValidator.unMuteUser, moderationController.unMuteUser);
 
-// POST api/moderation/ban/:id - Ban user
-router.post('/ban/:id', moderationValidator.banUser, moderationController.banUser);
+// POST api/moderation/ban/:userId - Ban user
+router.post('/ban/:userId', moderationValidator.banUser, moderationController.banUser);
 
-// POST api/moderation/unban/:id - Unban user
-router.post('/unban/:id', moderationValidator.unBanUser, moderationController.unBanUser);
+// POST api/moderation/unban/:userId - Unban user
+router.post('/unban/:userId', moderationValidator.unBanUser, moderationController.unBanUser);
 
 // GET api/moderation/warned-users - Get warned users
 router.get('/warned-users', moderationController.getAllUsersAreWarnings);
@@ -46,11 +46,11 @@ router.get('/get-reports', moderationValidator.getReports, moderationController.
 // GET api/moderation/search-reports - Search reports
 router.get('/search-reports', moderationValidator.searchReports, moderationController.searchReports);
 
-// GET api/moderation/report/:id - Get report by id
-router.get('/report/:id', moderationValidator.getReportById, moderationController.getReportById);
+// GET api/moderation/report/:reportId - Get report by id
+router.get('/report/:reportId', moderationValidator.getReportById, moderationController.getReportById);
 
-// POST api/moderation/change-report-status/:id - Change report status
-router.post('/change-report-status/:id', moderationValidator.changeReportStatus, moderationController.changeReportStatus);
+// POST api/moderation/change-report-status/:reportId - Change report status
+router.post('/change-report-status/:reportId', moderationValidator.changeReportStatus, moderationController.changeReportStatus);
 
 // GET api/moderation/reported-messages - Get reported messages
 router.get('/reported-messages', moderationController.getReportedMessages);

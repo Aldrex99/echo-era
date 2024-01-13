@@ -23,8 +23,8 @@ export const getUserChats = [
   .withMessage("Le nombre de chats à récupérer est invalide"),
   query("offset")
   .optional()
-  .isInt({min: 1})
-  .withMessage("L'offset est invalide"),
+  .isInt({min: 0})
+  .withMessage("Le nombre de page est invalide"),
 ];
 
 export const getChatInfo = [
@@ -37,15 +37,15 @@ export const addUserToChat = [
 ];
 
 export const acceptChatRequest = [
-  body("requestId").isMongoId().withMessage("L'id de la requête est invalide"),
+  param("requestId").isMongoId().withMessage("L'id de la requête est invalide"),
 ];
 
 export const declineChatRequest = [
-  body("requestId").isMongoId().withMessage("L'id de la requête est invalide"),
+  param("requestId").isMongoId().withMessage("L'id de la requête est invalide"),
 ];
 
 export const updateChatInfo = [
-  param("id").isMongoId().withMessage("L'id du chat est invalide"),
+  param("chatId").isMongoId().withMessage("L'id du chat est invalide"),
   body("name")
   .optional()
   .isLength({min: 1})
@@ -57,36 +57,28 @@ export const updateChatInfo = [
 ];
 
 export const updateChatParticipantRole = [
-  param("id").isMongoId().withMessage("L'id du chat est invalide"),
+  param("chatId").isMongoId().withMessage("L'id du chat est invalide"),
+  param("userId").isMongoId().withMessage("L'id de l'utilisateur est invalide"),
   body("role")
   .isIn(["user", "moderator", "admin"])
   .withMessage("Le rôle est invalide"),
-  body("userId").isMongoId().withMessage("L'id de l'utilisateur est invalide"),
 ];
 
 export const removeUserFromChat = [
-  param("id").isMongoId().withMessage("L'id du chat est invalide"),
-  body("userId").isMongoId().withMessage("L'id de l'utilisateur est invalide"),
+  param("chatId").isMongoId().withMessage("L'id du chat est invalide"),
+  param("userId").isMongoId().withMessage("L'id de l'utilisateur est invalide"),
 ];
 
 export const leaveChat = [
-  param("id").isMongoId().withMessage("L'id du chat est invalide"),
+  param("chatId").isMongoId().withMessage("L'id du chat est invalide"),
 ];
 
 export const deleteChat = [
-  param("id").isMongoId().withMessage("L'id du chat est invalide"),
+  param("chatId").isMongoId().withMessage("L'id du chat est invalide"),
 ];
 
 export const searchChats = [
-  query("query")
+  query("search")
   .isLength({min: 1})
   .withMessage("La recherche est invalide"),
-  query("limit")
-  .optional()
-  .isInt({min: 1})
-  .withMessage("Le nombre de chats à récupérer est invalide"),
-  query("offset")
-  .optional()
-  .isInt({min: 1})
-  .withMessage("L'offset est invalide"),
 ];

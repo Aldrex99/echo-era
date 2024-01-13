@@ -6,8 +6,77 @@ import { IReportedMessage, ISearchFields, ISearchReportResult } from "../types/g
 import Message from "../models/Message.model";
 import { ObjectId } from "mongodb";
 
-export const getAllUsers = async () => {
-  return User.find();
+export const getAllUsers = async (offset: number, limit: number, sortField: string, sortOrder: number) => {
+  const sortOptions = {};
+  sortOptions[sortField] = sortOrder;
+
+  const users = await User.find({}, {
+    _id: 1,
+    username: 1,
+    role: 1,
+    isActive: 1,
+    warnings: 1,
+    isMuted: 1,
+    isBanned: 1,
+    sanctionReason: 1
+  }).sort(sortOptions).skip(offset * limit).limit(limit);
+
+  return {
+    users,
+    total: await User.countDocuments(),
+  };
+}
+
+export const searchUsers = async (search: string, offset: number, limit: number) => {
+  const queryConditions = {
+    $or: [{
+      username: {
+        $regex: search,
+        $options: "i"
+      }
+    }, {previousNames: {$elemMatch: {username: {$regex: search, $options: "i"}}}}, {
+      usernameOnDelete: {
+        $regex: search,
+        $options: "i"
+      }
+    }]
+  };
+
+  const users = await User.find(queryConditions, {
+    _id: 1,
+    username: 1,
+    role: 1,
+    isActive: 1,
+    warnings: 1,
+    isMuted: 1,
+    isBanned: 1,
+    sanctionReason: 1
+  }).skip(offset * limit).limit(limit);
+
+  return {
+    users,
+    total: await User.countDocuments(queryConditions),
+  }
+}
+
+export const getUser = async (id: string) => {
+  return User.findById(id, {
+    _id: 1,
+    username: 1,
+    profile: 1,
+    role: 1,
+    previousNames: 1,
+    usernameOnDelete: 1,
+    isActive: 1,
+    warnings: 1,
+    isMuted: 1,
+    muteDuration: 1,
+    muteExpiresAt: 1,
+    isBanned: 1,
+    banDuration: 1,
+    banExpiresAt: 1,
+    sanctionReason: 1,
+  });
 }
 
 export const getUserById = async (id: string) => {
@@ -23,10 +92,6 @@ export const getUserById = async (id: string) => {
 export const warnUser = async (userId: string, reason: string, warnerId: string) => {
   const user = await getUserById(userId);
 
-  if (!user) {
-    throw new AppError("Utilisateur introuvable", 404);
-  }
-
   // Create moderation log
   await moderationLogUtil(warnerId, userId, "warn", reason);
 
@@ -37,15 +102,11 @@ export const warnUser = async (userId: string, reason: string, warnerId: string)
     date: new Date(),
   });
 
-  return user.save();
+  await user.save();
 }
 
-export const unWarnUser = async (userId: string, warnId: string, reason: string, moderatorId: string) => {
+export const unWornUser = async (userId: string, warnId: string, reason: string, moderatorId: string) => {
   const user = await getUserById(userId);
-
-  if (!user) {
-    throw new AppError("Utilisateur introuvable", 404);
-  }
 
   // Check if warn exists
   const warn = user.warnings.find(warn => warn._id.toString() === warnId);
@@ -58,15 +119,11 @@ export const unWarnUser = async (userId: string, warnId: string, reason: string,
   await User.findOneAndUpdate({_id: userId}, {$pull: {warnings: {_id: warnId}}});
 
   // Create moderation log
-  await moderationLogUtil(moderatorId, userId, "unwarn", reason ? reason : warn.reason);
+  await moderationLogUtil(moderatorId, userId, "unworn", reason ? reason : warn.reason);
 }
 
 export const muteUser = async (userId: string, reason: string, durationInMin: number, muterId: string) => {
   const user = await getUserById(userId);
-
-  if (!user) {
-    throw new AppError("Utilisateur introuvable", 404);
-  }
 
   // Check if user is already muted
   if (user.isMuted) {
@@ -81,23 +138,19 @@ export const muteUser = async (userId: string, reason: string, durationInMin: nu
   user.muteDuration = durationInMin;
   user.muteExpiresAt = new Date(Date.now() + durationInMin * 60000);
 
-  const reasonAggrement = reason + ` Durée : ${durationInMin} minutes`;
+  const reasonAgreement = reason + ` Durée : ${durationInMin} minutes`;
 
   user.sanctionReason.push({
-    reason: reasonAggrement,
+    reason: reasonAgreement,
     type: "mute",
     date: new Date(),
   });
 
-  return user.save();
+  await user.save();
 }
 
 export const unMuteUser = async (userId: string, moderatorId: string, reason: string) => {
   const user = await getUserById(userId);
-
-  if (!user) {
-    throw new AppError("Utilisateur introuvable", 404);
-  }
 
   // Check if user is muted
   if (!user.isMuted) {
@@ -112,15 +165,11 @@ export const unMuteUser = async (userId: string, moderatorId: string, reason: st
   user.muteDuration = null;
   user.muteExpiresAt = null;
 
-  return user.save();
+  await user.save();
 }
 
 export const banUser = async (userId: string, reason: string, durationInHours: number, bannerId: string) => {
   const user = await getUserById(userId);
-
-  if (!user) {
-    throw new AppError("Utilisateur introuvable", 404);
-  }
 
   // Check if user is already banned
   if (user.isBanned) {
@@ -135,23 +184,19 @@ export const banUser = async (userId: string, reason: string, durationInHours: n
   user.banDuration = durationInHours;
   user.banExpiresAt = new Date(Date.now() + durationInHours * 3600000);
 
-  const reasonAggrement = reason + ` Durée : ${durationInHours} heures`;
+  const reasonAgreement = reason + ` Durée : ${durationInHours} heures`;
 
   user.sanctionReason.push({
-    reason: reasonAggrement,
+    reason: reasonAgreement,
     type: "ban",
     date: new Date(),
   });
 
-  return user.save();
+  await user.save();
 }
 
 export const unBanUser = async (userId: string, moderatorId: string, reason: string) => {
   const user = await getUserById(userId);
-
-  if (!user) {
-    throw new AppError("Utilisateur introuvable", 404);
-  }
 
   // Check if user is banned
   if (!user.isBanned) {
@@ -166,32 +211,66 @@ export const unBanUser = async (userId: string, moderatorId: string, reason: str
   user.banDuration = null;
   user.banExpiresAt = null;
 
-  return user.save();
+  await user.save();
 }
 
 export const getAllUsersAreWarnings = async () => {
-  return User.find({warnings: {$not: {$size: 0}}});
+  return User.find({warnings: {$not: {$size: 0}}}, {
+    _id: 1,
+    username: 1,
+    role: 1,
+    isActive: 1,
+    warnings: 1,
+    isMuted: 1,
+    isBanned: 1,
+    sanctionReason: 1
+  });
 }
 
 export const getAllUsersAreMuted = async () => {
-  return User.find({isMuted: true});
+  return User.find({isMuted: true}, {
+    _id: 1,
+    username: 1,
+    role: 1,
+    isActive: 1,
+    warnings: 1,
+    isMuted: 1,
+    isBanned: 1,
+    sanctionReason: 1
+  });
 }
 
 export const getAllUsersAreBanned = async () => {
-  return User.find({isBanned: true});
+  return User.find({isBanned: true}, {
+    _id: 1,
+    username: 1,
+    role: 1,
+    isActive: 1,
+    warnings: 1,
+    isMuted: 1,
+    isBanned: 1,
+    sanctionReason: 1
+  });
 }
 
-export const getReports = async (status: string) => {
-  return Report.find({status});
-}
+export const getReports = async (status: string, offset: number, limit: number) => {
+  const reports = await Report.find({status}, {__v: 0})
+    .populate("fromUser", "username")
+    .populate("toUser", "username")
+    .populate("messageId", "content")
+    .sort({date: -1})
+    .skip(offset * limit)
+    .limit(limit)
 
-export const getReportsByMultipleFields = async (fields: ISearchFields[], query: string, offset: number, limit: number) => {
-  if (offset < 1 || limit < 1) {
-    throw new AppError("Les paramètres limit et offset doivent être supérieurs à 0", 422);
+  return {
+    reports,
+    total: await Report.countDocuments({status}),
   }
+}
 
+export const getReportsByMultipleFields = async (fields: ISearchFields[], search: string, offset: number, limit: number) => {
   // Get reports by reason, from username, to username, from email, to email, from usernameOnDelete, to usernameOnDelete, from emailOnDelete, to emailOnDelete, from username in PreviousUsername, to username in PreviousUsername, from email in PreviousEmail, to email in PreviousEmail
-  const reports: ISearchReportResult[] = await Report.find().populate("fromUser", "username email usernameOnDelete emailOnDelete previousNames previousEmail").populate("toUser", "username email usernameOnDelete emailOnDelete previousNames previousEmail");
+  const reports: ISearchReportResult[] = await Report.find({}, {__v: 0}).populate("fromUser", "username usernameOnDelete previousNames").populate("toUser", "username usernameOnDelete previousNames");
 
   // Filter reports
   const filteredReports = reports.filter((report) => {
@@ -202,51 +281,29 @@ export const getReportsByMultipleFields = async (fields: ISearchFields[], query:
 
       switch (field.field) {
         case "reason":
-          isReport = report?.reason?.toLowerCase().includes(query?.toLowerCase()) || isReport;
+          isReport = report?.reason?.toLowerCase().includes(search?.toLowerCase()) || isReport;
           break;
         case "fromUsername":
-          isReport = report?.fromUser?.username?.toLowerCase().includes(query?.toLowerCase()) || isReport;
+          isReport = report?.fromUser?.username?.toLowerCase().includes(search?.toLowerCase()) || isReport;
           break;
         case "toUsername":
-          isReport = report?.toUser?.username?.toLowerCase().includes(query?.toLowerCase()) || isReport;
-          break;
-        case "fromEmail":
-          isReport = report?.fromUser?.email?.toLowerCase().includes(query?.toLowerCase()) || isReport;
-          break;
-        case "toEmail":
-          isReport = report?.toUser?.email?.toLowerCase().includes(query?.toLowerCase()) || isReport;
+          isReport = report?.toUser?.username?.toLowerCase().includes(search?.toLowerCase()) || isReport;
           break;
         case "fromUsernameOnDelete":
-          isReport = report?.fromUser?.usernameOnDelete?.toLowerCase().includes(query?.toLowerCase()) || isReport;
+          isReport = report?.fromUser?.usernameOnDelete?.toLowerCase().includes(search?.toLowerCase()) || isReport;
           break;
         case "toUsernameOnDelete":
-          isReport = report?.toUser?.usernameOnDelete?.toLowerCase().includes(query?.toLowerCase()) || isReport;
-          break;
-        case "fromEmailOnDelete":
-          isReport = report?.fromUser?.emailOnDelete?.toLowerCase().includes(query?.toLowerCase()) || isReport;
-          break;
-        case "toEmailOnDelete":
-          isReport = report?.toUser?.emailOnDelete?.toLowerCase().includes(query?.toLowerCase()) || isReport;
+          isReport = report?.toUser?.usernameOnDelete?.toLowerCase().includes(search?.toLowerCase()) || isReport;
           break;
         case "fromUsernameInPreviousUsername":
           const previousNames = report?.fromUser?.previousNames?.map(pn => pn.username);
 
-          isReport = previousNames?.includes(query?.toLowerCase()) || isReport;
+          isReport = previousNames?.includes(search?.toLowerCase()) || isReport;
           break;
         case "toUsernameInPreviousUsername":
           const previousNames2 = report?.toUser?.previousNames?.map(pn => pn.username);
 
-          isReport = previousNames2?.includes(query?.toLowerCase()) || isReport;
-          break;
-        case "fromEmailInPreviousEmail":
-          const previousEmails = report?.fromUser?.previousEmail?.map(pe => pe.email);
-
-          isReport = previousEmails?.includes(query?.toLowerCase()) || isReport;
-          break;
-        case "toEmailInPreviousEmail":
-          const previousEmails2 = report?.toUser?.previousEmail?.map(pe => pe.email);
-
-          isReport = previousEmails2?.includes(query?.toLowerCase()) || isReport;
+          isReport = previousNames2?.includes(search?.toLowerCase()) || isReport;
           break;
         default:
           break;
@@ -261,11 +318,14 @@ export const getReportsByMultipleFields = async (fields: ISearchFields[], query:
   });
 
   // Paginate reports
-  return sortedReports.slice(offset - 1, offset - 1 + limit);
+  return {
+    reports: sortedReports.slice(offset, offset + limit),
+    total: sortedReports.length,
+  };
 }
 
-export const getReportById = async (id: string) => {
-  const report = await Report.findById(id).populate("fromUser", "username email").populate("toUser", "username email").populate("messageId", "content");
+export const getReportById = async (reportId: string) => {
+  const report = await Report.findById(reportId, {__v: 0}).populate("fromUser", "username").populate("toUser", "username").populate("messageId", "content");
 
   if (!report) {
     throw new AppError("Signalement introuvable", 404);
@@ -274,8 +334,8 @@ export const getReportById = async (id: string) => {
   return report;
 }
 
-export const changeReportStatus = async (id: string, status: "pending" | "resolved" | "rejected", moderatorId: string) => {
-  const report = await getReportById(id);
+export const changeReportStatus = async (reportId: string, status: "pending" | "resolved" | "rejected", moderatorId: string) => {
+  const report = await getReportById(reportId);
 
   if (!report) {
     throw new AppError("Signalement introuvable", 404);
@@ -285,9 +345,9 @@ export const changeReportStatus = async (id: string, status: "pending" | "resolv
   report.status = status;
 
   // Create moderation log
-  await moderationLogUtil(moderatorId, report.toUser._id.toString(), 'status', `Signalement ${status}, reportId: ${id}`);
+  await moderationLogUtil(moderatorId, report.toUser._id.toString(), 'status', `Signalement ${status}, reportId: ${reportId}`);
 
-  return report.save();
+  await report.save();
 }
 
 export const getReportedMessages = async () => {

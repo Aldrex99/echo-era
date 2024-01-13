@@ -10,7 +10,7 @@ const userSchema = new Schema({
     birthday: Date,
     location: String,
   },
-  role: {type: String, default: 'user', enum: ['user', 'moderator', 'admin']},
+  role: {type: String, default: 'user', enum: ['user', 'moderator', 'admin', 'server']},
   previousNames: [{
     username: {type: String, required: true},
     date: {type: Date, default: Date.now},
@@ -51,7 +51,7 @@ const userSchema = new Schema({
     user: {type: Schema.Types.ObjectId, ref: 'User'},
     date: {type: Date, default: Date.now},
   }],
-  blockedChat: [{
+  blockedChats: [{
     chat: {type: Schema.Types.ObjectId, ref: 'Chat'},
     date: {type: Date, default: Date.now},
   }],

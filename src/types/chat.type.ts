@@ -33,6 +33,21 @@ export interface IChatDocumentMongo {
   description?: string;
 }
 
+export interface IRawChatInfo {
+  _id: Types.ObjectId;
+  name: string;
+  description: string;
+  type: "public" | "private" | "group";
+  participants: {
+    user: {
+      _id: Types.ObjectId;
+      username: string;
+    };
+    role: "user" | "moderator" | "admin";
+  }[];
+  createdAt: Date;
+}
+
 export interface IGetChat {
   id: Types.ObjectId;
   name: string;
@@ -42,7 +57,30 @@ export interface IGetChat {
     id: Types.ObjectId;
     username: string;
     role: "user" | "moderator" | "admin";
-    date: Date;
+  }[];
+  createdAt: Date;
+}
+
+export interface IRawChatRequest {
+  _id: Types.ObjectId;
+  chatId: {
+    _id: Types.ObjectId;
+    name?: string;
+  };
+  to: Types.ObjectId;
+  date: Date;
+}
+
+export interface IRawChatList {
+  _id: Types.ObjectId;
+  name: string;
+  description: string;
+  type: "public" | "private" | "group";
+  participants: {
+    user: {
+      _id: Types.ObjectId;
+      username: string;
+    };
   }[];
   createdAt: Date;
 }

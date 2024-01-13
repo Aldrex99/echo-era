@@ -61,7 +61,7 @@ export interface IUserMongo {
   email?: string;
   password?: string;
   profile?: IProfile;
-  role?: 'user' | 'moderator' | 'admin';
+  role?: 'user' | 'moderator' | 'admin' | 'server';
   previousNames?: IPreviousName[];
   previousEmails?: IPreviousEmail[];
   usernameOnDelete?: string;
@@ -88,31 +88,10 @@ export interface IUserMongo {
   deletedAt?: Date;
 }
 
-export interface IPersonalUser {
-  id: string;
-  username?: string;
-  email?: string;
-  profile?: IProfile;
-  role: 'user' | 'moderator' | 'admin';
-  isVerified: boolean;
-  friends: IFriend[];
-  blockedUsers: IBlockedUser[];
-  createdAt: Date;
-  updatedAt: Date;
-  lastLogout: Date;
-}
-
 export interface IPersonalUserUpdate {
   username?: string;
   email?: string;
   profile?: IProfile;
-}
-
-export interface IUserForUser {
-  id: string;
-  username?: string;
-  profile?: IProfile;
-  role: 'user' | 'moderator' | 'admin';
 }
 
 export interface IUserForModeration {
@@ -120,7 +99,7 @@ export interface IUserForModeration {
   username?: string;
   email?: string;
   profile?: IProfile;
-  role: 'user' | 'moderator' | 'admin';
+  role: 'user' | 'moderator' | 'admin' | 'server';
   previousNames?: IPreviousName[];
   previousEmails?: IPreviousEmail[];
   usernameOnDelete?: string;

@@ -10,7 +10,8 @@ export const sendMessage = async (req: IRequestUser, res: Response, next: NextFu
   await validationErrorsUtil(errors, res);
 
   try {
-    const {chatId, content} = req.body;
+    const {chatId} = req.params;
+    const {content} = req.body;
 
     // Send message
     const message = await messageService.sendMessage(req.user.id, chatId, content);
@@ -31,7 +32,8 @@ export const editMessage = async (req: IRequestUser, res: Response, next: NextFu
   await validationErrorsUtil(errors, res);
 
   try {
-    const {messageId, content} = req.body;
+    const {messageId} = req.params;
+    const {content} = req.body;
 
     // Edit message
     const message = await messageService.editMessage(req.user.id, messageId, content);
@@ -52,7 +54,7 @@ export const deleteMessage = async (req: IRequestUser, res: Response, next: Next
   await validationErrorsUtil(errors, res);
 
   try {
-    const {messageId} = req.body;
+    const {messageId} = req.params;
 
     // Delete message
     const message = await messageService.deleteMessage(req.user.id, messageId);
@@ -82,7 +84,8 @@ export const getChatMessages = async (req: IRequestUser, res: Response, next: Ne
     // Send response
     res.status(200).json({
       message: 'Messages récupérés',
-      messagesData: messages
+      messagesData: messages.message,
+      total: messages.total
     });
   } catch (err) {
     next(err);
@@ -104,7 +107,8 @@ export const searchMessages = async (req: IRequestUser, res: Response, next: Nex
     // Send response
     res.status(200).json({
       message: 'Messages récupérés',
-      messagesData: messages
+      messagesData: messages.message,
+      total: messages.total
     });
   } catch (err) {
     next(err);
@@ -117,7 +121,8 @@ export const reportMessage = async (req: IRequestUser, res: Response, next: Next
   await validationErrorsUtil(errors, res);
 
   try {
-    const {messageId, reason} = req.body;
+    const {messageId} = req.params;
+    const {reason} = req.body;
 
     // Report message
     await messageService.reportMessage(req.user.id, messageId, reason);
