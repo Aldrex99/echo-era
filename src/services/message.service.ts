@@ -26,10 +26,12 @@ export const sendMessage = async (senderId: string, chatId: string, content: str
     throw new AppError("Le chat n'existe pas", 404);
   }
 
-  // Check if user is in the chat
-  const participant = chat.participants.find(participant => participant.user.toString() === senderId);
-  if (!participant) {
-    throw new AppError("Vous n'êtes pas dans le chat ou vous essayer d'envoyer un message", 403);
+  // Check if user is in the chat if chat is not public
+  if (chat.type !== 'public') {
+    const participant = chat.participants.find(participant => participant.user.toString() === senderId);
+    if (!participant) {
+      throw new AppError("Vous n'êtes pas dans le chat ou vous essayer d'envoyer un message", 403);
+    }
   }
 
   // If chat is private, check if user is friend with other participant
