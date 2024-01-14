@@ -34,8 +34,12 @@ export const sendMessage = async (senderId: string, chatId: string, content: str
 
   // If chat is private, check if user is friend with other participant
   if (chat.type === 'private') {
+    // Get other participant id
+    const otherParticipantId = chat.participants.find(participant => participant.user.toString() !== senderId)?.user.toString();
+
+    // Retrieve friend list
     const friend = await User.findById(chat.participants[0].user.toString(), {friends: 1});
-    const isFriend = friend?.friends.find(friend => friend.friend.toString() === senderId);
+    const isFriend = friend?.friends.find(friend => friend.friend.toString() === otherParticipantId);
     if (!isFriend) {
       throw new AppError("Vous n'êtes pas ami avec cette personne", 403);
     }
