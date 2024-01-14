@@ -128,6 +128,11 @@ export const addUserToChat = async (req: IRequestUser, res: Response, next: Next
     // Check if user is admin or moderator of the chat
     await participantRoleVerify(["admin", "moderator"], chat, req.user.id, res);
 
+    // Check if chat type is group
+    if (chat.type !== "group") {
+      return classicFailOrErrorResponse("Vous n'êtes pas autorisé à ajouter un utilisateur à ce chat", 403, res);
+    }
+
     // Add user to chat
     await chatService.addUserToChat(id, req.body.userId);
 
