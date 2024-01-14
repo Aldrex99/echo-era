@@ -13,8 +13,8 @@ router.post('/remove-moderator/:userId', adminValidator.removeModerator, adminCo
 // POST api/admin/create-global-chat - Create new global chat
 router.post('/create-global-chat', adminValidator.createGlobalChat, adminController.createGlobalChat);
 
-// POST api/admin/modify-global-chat/:chatId - Modify global chat
-router.post('/modify-global-chat/:chatId', adminValidator.modifyGlobalChat, adminController.modifyGlobalChat);
+// PUT api/admin/modify-global-chat/:chatId - Modify global chat
+router.put('/modify-global-chat/:chatId', adminValidator.modifyGlobalChat, adminController.modifyGlobalChat);
 
 // DELETE api/admin/delete-global-chat/:chatId - Delete global chat
 router.delete('/delete-global-chat/:chatId', adminValidator.deleteGlobalChat, adminController.deleteGlobalChat);
