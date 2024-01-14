@@ -6,7 +6,7 @@ import { ObjectId } from "mongodb";
 import User from "../models/User.model";
 import { IBlockedUser, IRawMessage } from "../types/message.type";
 
-const replaceMessageContent = (message: IRawMessage[], blockedUsers: IBlockedUser[]) => {
+const replaceMessageContent = async (message: IRawMessage[], blockedUsers: IBlockedUser[]) => {
   return message.map(message => {
     const blocked = blockedUsers[0].blockedUsers.find(blockedUser => blockedUser.user.toString() === message.sender._id.toString());
     if (blocked) {
@@ -147,9 +147,17 @@ export const getChatMessages = async (userId: string, chatId: string, limit: num
   // Get blocked user ids
   const blockedUsers: IBlockedUser[] = await User.find({_id: userId}, {blockedUsers: 1});
 
+  // Mark messages as read
+  const unreadMessages = message.filter(message => !message.readBy.find(readBy => readBy._id.toString() === userId));
+  await Message.updateMany({_id: {$in: unreadMessages}}, {
+    $push: {
+      readBy: new ObjectId(userId)
+    }
+  });
+
   // Replace message content by "Utilisateur bloqué" if user is blocked
   return {
-    message: replaceMessageContent(message, blockedUsers),
+    message: await replaceMessageContent(message, blockedUsers),
     total: await Message.countDocuments({chat: chatId})
   }
 }
