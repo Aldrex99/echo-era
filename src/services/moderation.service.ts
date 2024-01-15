@@ -60,7 +60,7 @@ export const searchUsers = async (search: string, offset: number, limit: number)
 }
 
 export const getUser = async (id: string) => {
-  return User.findById(id, {
+  const user = await User.findById(id, {
     _id: 1,
     username: 1,
     profile: 1,
@@ -76,10 +76,17 @@ export const getUser = async (id: string) => {
     banDuration: 1,
     banExpiresAt: 1,
     sanctionReason: 1,
+    reports: 1,
   });
+
+  if (!user) {
+    throw new AppError("Utilisateur introuvable", 404);
+  }
+
+  return user;
 }
 
-export const getUserById = async (id: string) => {
+const getUserById = async (id: string) => {
   const user = await User.findById(id);
 
   if (!user) {
@@ -254,13 +261,14 @@ export const getAllUsersAreBanned = async () => {
 }
 
 export const getReports = async (status: string, offset: number, limit: number) => {
-  const reports = await Report.find({status}, {__v: 0})
-    .populate("fromUser", "username")
-    .populate("toUser", "username")
-    .populate("messageId", "content")
-    .sort({date: -1})
-    .skip(offset * limit)
-    .limit(limit)
+  const reports = await Report.find({status}, {__v: 0, "moderatorComment._id": 0})
+  .populate("fromUser", "username")
+  .populate("toUser", "username")
+  .populate("messageId", "content")
+  .populate("moderatorComment.moderator", "username")
+  .sort({date: -1})
+  .skip(offset * limit)
+  .limit(limit)
 
   return {
     reports,
@@ -269,8 +277,10 @@ export const getReports = async (status: string, offset: number, limit: number) 
 }
 
 export const getReportsByMultipleFields = async (fields: ISearchFields[], search: string, offset: number, limit: number) => {
-  // Get reports by reason, from username, to username, from email, to email, from usernameOnDelete, to usernameOnDelete, from emailOnDelete, to emailOnDelete, from username in PreviousUsername, to username in PreviousUsername, from email in PreviousEmail, to email in PreviousEmail
-  const reports: ISearchReportResult[] = await Report.find({}, {__v: 0}).populate("fromUser", "username usernameOnDelete previousNames").populate("toUser", "username usernameOnDelete previousNames");
+  // Get reports by reason, from username, to username, from usernameOnDelete, to usernameOnDelete, from username in PreviousUsername, to username in PreviousUsername
+  const reports: ISearchReportResult[] = await Report.find({}, {__v: 0})
+  .populate("fromUser", "username usernameOnDelete previousNames")
+  .populate("toUser", "username usernameOnDelete previousNames");
 
   // Filter reports
   const filteredReports = reports.filter((report) => {
@@ -332,6 +342,19 @@ export const getReportById = async (reportId: string) => {
   }
 
   return report;
+}
+
+export const addCommentToReport = async (reportId: string, comment: string, moderatorId: string) => {
+  const report = await getReportById(reportId);
+
+  // Add comment
+  report.moderatorComment.push({
+    moderator: moderatorId,
+    comment,
+    date: new Date(),
+  });
+
+  await report.save();
 }
 
 export const changeReportStatus = async (reportId: string, status: "pending" | "resolved" | "rejected", moderatorId: string) => {

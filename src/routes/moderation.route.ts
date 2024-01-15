@@ -49,6 +49,9 @@ router.get('/search-reports', moderationValidator.searchReports, moderationContr
 // GET api/moderation/report/:reportId - Get report by id
 router.get('/report/:reportId', moderationValidator.getReportById, moderationController.getReportById);
 
+// POST api/moderation/add-comment/:reportId - Add comment to report
+router.post('/add-comment/:reportId', moderationValidator.addCommentToReport, moderationController.addCommentToReport);
+
 // POST api/moderation/change-report-status/:reportId - Change report status
 router.post('/change-report-status/:reportId', moderationValidator.changeReportStatus, moderationController.changeReportStatus);
 

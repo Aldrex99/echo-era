@@ -404,6 +404,9 @@ export const reportUser = async (userId: string, userReportedId: string, reasonI
     throw new AppError("La raison n'existe pas", 404);
   }
 
+  // Increment user reports
+  await User.updateOne({_id: userReportedId}, {$inc: {reports: 1}});
+
   // Create report
   const newReport = new Report({
     fromUser: userId,

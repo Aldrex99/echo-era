@@ -22,6 +22,7 @@ const userSchema = new Schema({
   usernameOnDelete: String,
   emailOnDelete: String,
   isActive: {type: Boolean, default: false},
+  reports: {type: Number, default: 0},
   warnings: [{
     reason: {type: String, required: true},
     date: {type: Date, default: Date.now},
