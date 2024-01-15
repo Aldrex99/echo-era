@@ -44,3 +44,15 @@ export const getModerationLogs = [
   .exists().withMessage("Le numéro de page est obligatoire")
   .isInt({min: 0}).withMessage("Le nombre de pages doit être un nombre entier supérieur ou égal à 0"),
 ];
+
+export const createReportReason = [
+  body("category")
+  .optional()
+  .isString().withMessage("La catégorie doit être une chaîne de caractères"),
+  body("reason")
+  .exists().withMessage("La raison est obligatoire")
+  .isString().withMessage("La raison doit être une chaîne de caractères"),
+  body("priority")
+  .exists().withMessage("La priorité est obligatoire")
+  .isInt({min: 1, max: 5}).withMessage("La priorité doit être un nombre entier compris entre 1 et 5"),
+];

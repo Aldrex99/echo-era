@@ -22,4 +22,7 @@ router.delete('/delete-global-chat/:chatId', adminValidator.deleteGlobalChat, ad
 // GET api/admin/get-moderation-logs - Get moderation logs
 router.get('/get-moderation-logs', adminValidator.getModerationLogs, adminController.getModerationLogs);
 
+// POST api/admin/create-report-reason - Create report reason
+router.post('/create-report-reason', adminValidator.createReportReason, adminController.createReportReason);
+
 export default router;
