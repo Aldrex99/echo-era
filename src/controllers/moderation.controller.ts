@@ -244,7 +244,7 @@ export const getReports = async (req: IRequestUser, res: Response, next: NextFun
   }
 }
 
-// Search reports by reason, from username, to username, from email, to email, from usernameOnDelete, to usernameOnDelete, from emailOnDelete, to emailOnDelete
+// Search reports by reason, from username, to username, from usernameOnDelete, to usernameOnDelete
 export const searchReports = async (req: IRequestUser, res: Response, next: NextFunction) => {
   const errors = validationResult(req);
   await validationErrorsUtil(errors, res);
@@ -275,6 +275,9 @@ export const searchReports = async (req: IRequestUser, res: Response, next: Next
 
 // Get report by id
 export const getReportById = async (req: IRequestUser, res: Response, next: NextFunction) => {
+  const errors = validationResult(req);
+  await validationErrorsUtil(errors, res);
+
   try {
     const {reportId} = req.params;
 
@@ -289,8 +292,30 @@ export const getReportById = async (req: IRequestUser, res: Response, next: Next
   }
 }
 
+export const addCommentToReport = async (req: IRequestUser, res: Response, next: NextFunction) => {
+  const errors = validationResult(req);
+  await validationErrorsUtil(errors, res);
+
+  try {
+    const {reportId} = req.params;
+    const {comment} = req.body;
+
+    await moderationService.addCommentToReport(reportId, comment, req.user.id);
+
+    return res.status(200).json({
+      message: "Commentaire ajouté",
+    });
+  } catch (err) {
+    next(err);
+  }
+
+}
+
 // Change report status
 export const changeReportStatus = async (req: IRequestUser, res: Response, next: NextFunction) => {
+  const errors = validationResult(req);
+  await validationErrorsUtil(errors, res);
+
   try {
     const {reportId} = req.params;
     const {status} = req.body;
@@ -321,6 +346,9 @@ export const getReportedMessages = async (req: IRequestUser, res: Response, next
 
 // Search reported messages
 export const searchReportedMessages = async (req: IRequestUser, res: Response, next: NextFunction) => {
+  const errors = validationResult(req);
+  await validationErrorsUtil(errors, res);
+
   try {
     const {query, limit, offset} = req.query;
     const fields: ISearchFields[] = [
@@ -343,6 +371,9 @@ export const searchReportedMessages = async (req: IRequestUser, res: Response, n
 
 // Delete reported message
 export const deleteReportedMessage = async (req: IRequestUser, res: Response, next: NextFunction) => {
+  const errors = validationResult(req);
+  await validationErrorsUtil(errors, res);
+
   try {
     const {id} = req.params;
     const {reason} = req.body;

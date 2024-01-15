@@ -120,3 +120,20 @@ export const getModerationLogs = async (req: IRequestUser, res: Response, next: 
     next(err);
   }
 }
+
+export const createReportReason = async (req: IRequestUser, res: Response, next: NextFunction) => {
+  const errors = validationResult(req);
+  await validationErrorsUtil(errors, res);
+
+  try {
+    const {category, reason, priority} = req.body;
+
+    await adminService.createReportReason(category, reason, priority, req.user.id);
+
+    return res.status(200).json({
+      message: "Raison de signalement créée",
+    });
+  } catch (err) {
+    next(err);
+  }
+}

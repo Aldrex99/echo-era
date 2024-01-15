@@ -4,6 +4,7 @@ import ModerationLog from "../models/ModerationLog.model";
 import { AppError } from "../utils/error.util";
 import { IChatCreation } from "../types/chat.type";
 import { moderationLogUtil } from "../utils/moderationLog.util";
+import ReportReason from "../models/ReportReason.model";
 
 export const addModerator = async (newModeratorId: string, adminId: string) => {
   const user = await User.findById(newModeratorId);
@@ -89,4 +90,16 @@ export const getModerationLogs = async (offset: number, limit: number) => {
   const total = await ModerationLog.countDocuments();
 
   return {logs, total};
+}
+
+export const createReportReason = async (category: string, reason: string, priority: number, adminId: string) => {
+  const newReportReason = new ReportReason({
+    category,
+    reason,
+    priority,
+  });
+
+  await newReportReason.save();
+
+  await moderationLogUtil(adminId, adminId, "createReportReason", `Création de la raison de report ${reason} ayant pour id ${newReportReason._id}`);
 }
