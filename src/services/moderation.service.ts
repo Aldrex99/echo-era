@@ -370,6 +370,15 @@ export const changeReportStatus = async (reportId: string, status: "pending" | "
   // Create moderation log
   await moderationLogUtil(moderatorId, report.toUser._id.toString(), 'status', `Signalement ${status}, reportId: ${reportId}`);
 
+  const user = await getUserById(report.toUser._id.toString());
+
+  if (status === "rejected") {
+    // Decrement user reports
+    user.reports = user.reports - 1;
+
+    await user.save();
+  }
+
   await report.save();
 }
 
