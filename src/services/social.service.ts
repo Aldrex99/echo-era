@@ -3,6 +3,7 @@ import FriendRequest from "../models/FriendRequest.model";
 import Report from "../models/Report.model";
 import Chat from "../models/Chat.model";
 import ChatRequest from "../models/ChatRequest.model";
+import ReportReason from "../models/ReportReason.model";
 import { createPrivateChat, leaveChat } from "./chat.service";
 import { AppError } from "../utils/error.util";
 import {
@@ -386,7 +387,7 @@ export const getBlockedChats = async (userId: string) => {
   });
 }
 
-export const reportUser = async (userId: string, userReportedId: string, reason: string) => {
+export const reportUser = async (userId: string, userReportedId: string, reasonId: string, comment: string) => {
   // Verify if the user exists
   const reportedUser = await User.findOne({_id: userReportedId});
 
@@ -395,11 +396,22 @@ export const reportUser = async (userId: string, userReportedId: string, reason:
     throw new AppError("Cet utilisateur n'existe pas", 404);
   }
 
+  // Get report reason
+  const reason = await ReportReason.findById(reasonId);
+
+  // If the reason does not exist
+  if (!reason) {
+    throw new AppError("La raison n'existe pas", 404);
+  }
+
   // Create report
   const newReport = new Report({
     fromUser: userId,
     toUser: userReportedId,
-    reason: reason,
+    reasonCategory: reason.category,
+    reason: reason.name,
+    reporterComment: comment,
+    priority: reason.priority,
   });
 
   // Save report
